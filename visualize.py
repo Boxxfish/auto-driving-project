@@ -74,7 +74,7 @@ def log_pc(entity_name: str, entity_path: Path, entity_xform: Transform, frame_i
 def main():
     rr.init("V2I Visualization")
     rr.connect()
-    data_path = Path("data/carla")
+    data_path = Path("data/carla_asha")
     infra_path = data_path / "infra"
     car_path = data_path / "car" 
     num_frames = 300

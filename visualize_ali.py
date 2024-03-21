@@ -4,10 +4,7 @@ Visualizes an episode.
 import rerun as rr
 from pathlib import Path
 from typing import *
-import open3d
-from tqdm import tqdm
 import numpy as np
-from math import radians, sin, cos
 from bagpy import bagreader
 import pandas as pd
 import sensor_msgs.point_cloud2 as pc2

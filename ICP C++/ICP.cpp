@@ -8,11 +8,11 @@
 #include <pcl/console/time.h>   // TicToc
 typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
+#include <Eigen/Geometry> // Include this for additional Eigen functionalities
 
 bool next_iteration = false;
 
-void
-print4x4Matrix (const Eigen::Matrix4d & matrix)
+void print4x4Matrix (const Eigen::Matrix4d & matrix)
 {
   printf ("Rotation matrix :\n");
   printf ("    | %6.3f %6.3f %6.3f | \n", matrix (0, 0), matrix (0, 1), matrix (0, 2));
@@ -22,22 +22,42 @@ print4x4Matrix (const Eigen::Matrix4d & matrix)
   printf ("t = < %6.3f, %6.3f, %6.3f >\n\n", matrix (0, 3), matrix (1, 3), matrix (2, 3));
 }
 
-void
-keyboardEventOccurred (const pcl::visualization::KeyboardEvent& event,
-                       void*)
+void keyboardEventOccurred (const pcl::visualization::KeyboardEvent& event, void*)
 {
   if (event.getKeySym () == "space" && event.keyDown ())
     next_iteration = true;
 }
 
-int
-main (int argc,
-      char* argv[])
+
+// Function to calculate and print RRE and RTE
+void printRREandRTE(const Eigen::Matrix4d &current_transformation, const Eigen::Matrix4d &ground_truth_transformation) {
+    // Extract rotation matrices
+    Eigen::Matrix3d R_current = current_transformation.block<3, 3>(0, 0);
+    Eigen::Matrix3d R_ground_truth = ground_truth_transformation.block<3, 3>(0, 0);
+
+    // Extract translation vectors
+    Eigen::Vector3d t_current = current_transformation.block<3, 1>(0, 3);
+    Eigen::Vector3d t_ground_truth = ground_truth_transformation.block<3, 1>(0, 3);
+
+    // Calculate RTE as Euclidean distance between the two translation vectors
+    double RTE = (t_current - t_ground_truth).norm();
+
+    // Calculate RRE as the angle between the two rotation matrices
+    Eigen::Quaterniond q_current(R_current), q_ground_truth(R_ground_truth);
+    double RRE = q_current.angularDistance(q_ground_truth);
+
+    // Print RRE and RTE
+    std::cout << "RTE: " << RTE << " meters" << std::endl;
+    std::cout << "RRE: " << RRE * (180.0 / M_PI) << " degrees" << std::endl; // Convert RRE from radians to degrees
+}
+int main (int argc, char* argv[])
 {
   // The point clouds we will be using
   PointCloudT::Ptr cloud_in (new PointCloudT);  // Original point cloud
   PointCloudT::Ptr cloud_tr (new PointCloudT);  // Transformed point cloud
   PointCloudT::Ptr cloud_icp (new PointCloudT);  // ICP output point cloud
+
+  Eigen::Matrix4d cumulative_transformation = Eigen::Matrix4d::Identity(); // Initialize cumulative transformation
 
   // Checking program arguments
   if (argc < 2)
@@ -179,6 +199,10 @@ main (int argc,
         std::cout << "\nICP transformation " << ++iterations << " : cloud_icp -> cloud_in" << std::endl;
         transformation_matrix *= icp.getFinalTransformation ().cast<double>();  // WARNING /!\ This is not accurate! For "educational" purpose only!
         print4x4Matrix (transformation_matrix);  // Print the transformation between original pose and current pose
+
+        cumulative_transformation *= icp.getFinalTransformation().cast<double>(); // Update cumulative transformation
+        print4x4Matrix(cumulative_transformation); // Print the current cumulative transformation matrix
+        printRREandRTE(cumulative_transformation, transformation_matrix); // Assuming 'transformation_matrix' is your ground truth
 
         ss.str ("");
         ss << iterations;

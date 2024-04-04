@@ -78,7 +78,7 @@ int main (int argc, char* argv[])
 {
   // The point clouds we will be using
   PointCloudT::Ptr cloud_i (new PointCloudT);  // Original point cloud
-  PointCloudT::Ptr cloud_tr (new PointCloudT);  // Transformed point cloud
+  PointCloudT::Ptr cloud_c_original (new PointCloudT);  // Transformed point cloud
   PointCloudT::Ptr cloud_c (new PointCloudT);  // ICP output point cloud
 
   Eigen::Matrix4d cumulative_transformation = Eigen::Matrix4d::Identity(); // Initialize cumulative transformation
@@ -149,6 +149,8 @@ int main (int argc, char* argv[])
     return (-1);
   }
 
+  *cloud_c_original = *cloud_c;
+
   // Visualization
   pcl::visualization::PCLVisualizer viewer ("ICP demo");
   // Create two vertically separated viewports
@@ -168,8 +170,8 @@ int main (int argc, char* argv[])
   viewer.addPointCloud (cloud_i, cloud_i_color_h, "cloud_i_v2", v2);
 
   // Transformed point cloud is green
-  pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_tr_color_h (cloud_tr, 20, 180, 20);
-  viewer.addPointCloud (cloud_tr, cloud_tr_color_h, "cloud_tr_v1", v1);
+  pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_c_original_color_h (cloud_c_original, 20, 180, 20);
+  viewer.addPointCloud (cloud_c_original, cloud_c_original_color_h, "cloud_c_v1", v1);
 
   // ICP aligned point cloud is red
   pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_c_color_h (cloud_c, 180, 20, 20);
@@ -189,8 +191,12 @@ int main (int argc, char* argv[])
   viewer.setBackgroundColor (bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, v2);
 
   // Set camera position and orientation
-  viewer.setCameraPosition (-3.68332, 2.94092, 5.71266, 0.289847, 0.921947, -0.256907, 0);
-  viewer.setSize (1280, 1024);  // Visualiser window size
+  // viewer.setCameraPosition (-3.68332, 2.94092, 5.71266, 0.289847, 0.921947, -0.256907, 0);
+  viewer.addCoordinateSystem (1.0);
+  viewer.initCameraParameters ();
+  viewer.setCameraPosition (100, 100, 100, 0, 0, 0, 0);
+
+  viewer.setSize (2500, 1600);  // Visualiser window size
 
   // Register keyboard callback :
   viewer.registerKeyboardCallback (&keyboardEventOccurred, (void*) NULL);

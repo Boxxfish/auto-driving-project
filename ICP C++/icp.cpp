@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <random>
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
@@ -51,7 +52,7 @@ void printRREandRTE(const Eigen::Matrix4d &current_transformation, const Eigen::
 }
 
 // Loads poses from a file.
-std::vector<Eigen::Matrix4d> load_poses(std::string path) {
+std::vector<Eigen::Matrix4d> load_poses(const std::string& path) {
   std::ifstream pose_file;
   pose_file.open(path);
   std::string line;
@@ -73,6 +74,21 @@ std::vector<Eigen::Matrix4d> load_poses(std::string path) {
   pose_file.close();
   return poses;
 }
+
+// Returns the location from a pose, with optional gaussian noise.
+Eigen::Matrix<double, 3, 1> get_loc(const Eigen::Matrix4d& pose, double stddev = 0.0) {
+  auto loc = Eigen::Vector3<double> { pose.block<1, 3>(3, 0).reshaped() };
+  if (stddev > 0.0) {
+    std::default_random_engine generator;
+    std::normal_distribution<double> dist(0.0, stddev);
+    // Modify only x and z coords
+    loc(0) += dist(generator);
+    loc(2) += dist(generator);
+  }
+  return loc;
+}
+
+const double GPS_NOISE_METERS = 10.0;
 
 int main (int argc, char* argv[])
 {
@@ -115,6 +131,10 @@ int main (int argc, char* argv[])
 
   auto const poses = load_poses(argv[2]);
   std::cout << "Loaded file " << argv[2] << " (" << poses.size() << " transforms)" << std::endl;
+
+  std::cout << "First pose: " << poses[0] << std::endl;
+  std::cout << "First pose location: " << get_loc(poses[0]) << std::endl;
+  std::cout << "First pose location with noise: " << get_loc(poses[0], GPS_NOISE_METERS) << std::endl;
 
   // Defining a rotation matrix and translation vector
   Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();

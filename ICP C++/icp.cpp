@@ -123,32 +123,10 @@ int main (int argc, char* argv[])
     return (-1);
   }
   std::cout << "\nLoaded file " << infra_pcd << " (" << cloud_i->size () << " points) in " << time.toc () << " ms\n" << std::endl;
-  auto const poses = load_poses(str:string("poses.txt"));
+  
+  
+  auto const poses = load_poses(std::string("poses.txt"));
   std::cout << "Loaded file " << argv[2] << " (" << poses.size() << " transforms)" << std::endl;
-
-  // Defining a rotation matrix and translation vector
-  //Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
-
-  // // Defining a rotation matrix and translation vector
-  // Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
-
-  // // A rotation matrix (see https://en.wikipedia.org/wiki/Rotation_matrix)
-  // double theta = M_PI / 8;  // The angle of rotation in radians
-  // transformation_matrix (0, 0) = std::cos (theta);
-  // transformation_matrix (0, 1) = -sin (theta);
-  // transformation_matrix (1, 0) = sin (theta);
-  // transformation_matrix (1, 1) = std::cos (theta);
-
-  // A translation on Z axis (0.4 meters)
-  // transformation_matrix (2, 3) = 0.4;
-
-  // // Display in terminal the transformation matrix
-  // std::cout << "Applying this rigid transformation to: cloud_i -> cloud_c" << std::endl;
-  // print4x4Matrix (transformation_matrix);
-
-  // // Executing the transformation
-  // pcl::transformPointCloud (*cloud_i, *cloud_c, transformation_matrix);
-  // *cloud_tr = *cloud_c;  // We backup cloud_c into cloud_tr for later use
 
   // The Iterative Closest Point algorithm
   time.tic ();
@@ -164,8 +142,6 @@ int main (int argc, char* argv[])
   {
     std::cout << "\nICP has converged, score is " << icp.getFitnessScore () << std::endl;
     std::cout << "\nICP transformation " << iterations << " : cloud_c -> cloud_i" << std::endl;
-    // transformation_matrix = icp.getFinalTransformation ().cast<double>();
-    // print4x4Matrix (transformation_matrix);
   }
   else
   {

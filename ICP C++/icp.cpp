@@ -28,7 +28,6 @@ void keyboardEventOccurred (const pcl::visualization::KeyboardEvent& event, void
     next_iteration = true;
 }
 
-
 // Function to calculate and print RRE and RTE
 void printRREandRTE(const Eigen::Matrix4d &current_transformation, const Eigen::Matrix4d &ground_truth_transformation) {
     // Extract rotation matrices
@@ -50,6 +49,31 @@ void printRREandRTE(const Eigen::Matrix4d &current_transformation, const Eigen::
     std::cout << "RTE: " << RTE << " meters" << std::endl;
     std::cout << "RRE: " << RRE * (180.0 / M_PI) << " degrees" << std::endl; // Convert RRE from radians to degrees
 }
+
+// Loads poses from a file.
+std::vector<Eigen::Matrix4d> load_poses(std::string path) {
+  std::ifstream pose_file;
+  pose_file.open(path);
+  std::string line;
+  std::vector<Eigen::Matrix4d> poses;
+  std::string space = " ";
+  while (std::getline(pose_file, line)) {
+    std::vector<double> elems;
+    for (int row = 0; row < 4; row++) {
+      for (int col = 0; col < 4; col++) {
+        double elem = std::stod(line.substr(0, line.find(space)));
+        line.erase(0, line.find(space) + 1);
+        elems.push_back(elem);
+      }
+      std::getline(pose_file, line);
+    }
+    auto const pose = Eigen::Map<Eigen::Matrix<double, 4, 4>>(elems.data());
+    poses.push_back(pose);
+  }
+  pose_file.close();
+  return poses;
+}
+
 int main (int argc, char* argv[])
 {
   // The point clouds we will be using
@@ -60,19 +84,19 @@ int main (int argc, char* argv[])
   Eigen::Matrix4d cumulative_transformation = Eigen::Matrix4d::Identity(); // Initialize cumulative transformation
 
   // Checking program arguments
-  if (argc < 2)
+  if (argc < 3)
   {
     printf ("Usage :\n");
-    printf ("\t\t%s file.pcd number_of_ICP_iterations\n", argv[0]);
+    printf ("\t\t%s file.pcd pose.txt number_of_ICP_iterations\n", argv[0]);
     PCL_ERROR ("Provide one pcd file.\n");
     return (-1);
   }
 
   int iterations = 1;  // Default number of ICP iterations
-  if (argc > 2)
+  if (argc > 3)
   {
     // If the user passed the number of iteration as an argument
-    iterations = atoi (argv[2]);
+    iterations = atoi (argv[3]);
     if (iterations < 1)
     {
       PCL_ERROR ("Number of initial iterations must be >= 1\n");
@@ -88,6 +112,9 @@ int main (int argc, char* argv[])
     return (-1);
   }
   std::cout << "\nLoaded file " << argv[1] << " (" << cloud_in->size () << " points) in " << time.toc () << " ms\n" << std::endl;
+
+  auto const poses = load_poses(argv[2]);
+  std::cout << "Loaded file " << argv[2] << " (" << poses.size() << " transforms)" << std::endl;
 
   // Defining a rotation matrix and translation vector
   Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();

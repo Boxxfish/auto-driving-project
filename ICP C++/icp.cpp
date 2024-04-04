@@ -182,7 +182,7 @@ int main (int argc, char* argv[])
   // Display the visualiser
   while (!viewer.wasStopped ())
   {
-    viewer.spinOnce ();
+    viewer.spin ();
 
     // The user pressed "space" :
     if (next_iteration)

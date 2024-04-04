@@ -93,9 +93,9 @@ const double GPS_NOISE_METERS = 10.0;
 int main (int argc, char* argv[])
 {
   // The point clouds we will be using
-  PointCloudT::Ptr cloud_in (new PointCloudT);  // Original point cloud
-  PointCloudT::Ptr cloud_tr (new PointCloudT);  // Transformed point cloud
-  PointCloudT::Ptr cloud_icp (new PointCloudT);  // ICP output point cloud
+  PointCloudT::Ptr cloud_i (new PointCloudT);  // Original point cloud
+  PointCloudT::Ptr cloud_c_original (new PointCloudT);  // Transformed point cloud
+  PointCloudT::Ptr cloud_c (new PointCloudT);  // ICP output point cloud
 
   Eigen::Matrix4d cumulative_transformation = Eigen::Matrix4d::Identity(); // Initialize cumulative transformation
 
@@ -103,10 +103,13 @@ int main (int argc, char* argv[])
   if (argc < 3)
   {
     printf ("Usage :\n");
-    printf ("\t\t%s file.pcd pose.txt number_of_ICP_iterations\n", argv[0]);
+    printf ("\t\t%s split_data_number number_of_ICP_iterations\n", argv[0]);
     PCL_ERROR ("Provide one pcd file.\n");
     return (-1);
   }
+
+  std::string car_pcd = std::string("../../splits/") + argv[1] + std::string("_v.pcd");
+  std::string infra_pcd = std::string("../../splits/") + argv[1] + std::string("_i.pcd");
 
   int iterations = 1;  // Default number of ICP iterations
   if (argc > 3)
@@ -122,63 +125,47 @@ int main (int argc, char* argv[])
 
   pcl::console::TicToc time;
   time.tic ();
-  if (pcl::io::loadPCDFile (argv[1], *cloud_in) < 0)
+  if (pcl::io::loadPCDFile (car_pcd, *cloud_c) < 0)
   {
     PCL_ERROR ("Error loading cloud %s.\n", argv[1]);
     return (-1);
   }
-  std::cout << "\nLoaded file " << argv[1] << " (" << cloud_in->size () << " points) in " << time.toc () << " ms\n" << std::endl;
+  std::cout << "\nLoaded file " << car_pcd << " (" << cloud_c->size () << " points) in " << time.toc () << " ms\n" << std::endl;
 
-  auto const poses = load_poses(argv[2]);
-  std::cout << "Loaded file " << argv[2] << " (" << poses.size() << " transforms)" << std::endl;
-
-  std::cout << "First pose: " << poses[0] << std::endl;
-  std::cout << "First pose location: " << get_loc(poses[0]) << std::endl;
-  std::cout << "First pose location with noise: " << get_loc(poses[0], GPS_NOISE_METERS) << std::endl;
-
-  // Defining a rotation matrix and translation vector
-  Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
-
-  // A rotation matrix (see https://en.wikipedia.org/wiki/Rotation_matrix)
-  double theta = M_PI / 8;  // The angle of rotation in radians
-  transformation_matrix (0, 0) = std::cos (theta);
-  transformation_matrix (0, 1) = -sin (theta);
-  transformation_matrix (1, 0) = sin (theta);
-  transformation_matrix (1, 1) = std::cos (theta);
-
-  // A translation on Z axis (0.4 meters)
-  transformation_matrix (2, 3) = 0.4;
-
-  // Display in terminal the transformation matrix
-  std::cout << "Applying this rigid transformation to: cloud_in -> cloud_icp" << std::endl;
-  print4x4Matrix (transformation_matrix);
-
-  // Executing the transformation
-  pcl::transformPointCloud (*cloud_in, *cloud_icp, transformation_matrix);
-  *cloud_tr = *cloud_icp;  // We backup cloud_icp into cloud_tr for later use
+  time.tic ();
+  if (pcl::io::loadPCDFile (infra_pcd, *cloud_i) < 0)
+  {
+    PCL_ERROR ("Error loading cloud %s.\n", argv[1]);
+    return (-1);
+  }
+  std::cout << "\nLoaded file " << infra_pcd << " (" << cloud_i->size () << " points) in " << time.toc () << " ms\n" << std::endl;
+  
+  
+  auto const poses = load_poses(std::string("poses.txt"));
+  std::cout << "Loaded file " << "poses.txt" << " (" << poses.size() << " transforms)" << std::endl;
 
   // The Iterative Closest Point algorithm
   time.tic ();
   pcl::IterativeClosestPoint<PointT, PointT> icp;
   icp.setMaximumIterations (iterations);
-  icp.setInputSource (cloud_icp);
-  icp.setInputTarget (cloud_in);
-  icp.align (*cloud_icp);
+  icp.setInputSource (cloud_c); //cloud_c --> cloud_c
+  icp.setInputTarget (cloud_i); //cloud_i --> i
+  icp.align (*cloud_c);
   icp.setMaximumIterations (1);  // We set this variable to 1 for the next time we will call .align () function
   std::cout << "Applied " << iterations << " ICP iteration(s) in " << time.toc () << " ms" << std::endl;
 
   if (icp.hasConverged ())
   {
     std::cout << "\nICP has converged, score is " << icp.getFitnessScore () << std::endl;
-    std::cout << "\nICP transformation " << iterations << " : cloud_icp -> cloud_in" << std::endl;
-    transformation_matrix = icp.getFinalTransformation ().cast<double>();
-    print4x4Matrix (transformation_matrix);
+    std::cout << "\nICP transformation " << iterations << " : cloud_c -> cloud_i" << std::endl;
   }
   else
   {
     PCL_ERROR ("\nICP has not converged.\n");
     return (-1);
   }
+
+  *cloud_c_original = *cloud_c;
 
   // Visualization
   pcl::visualization::PCLVisualizer viewer ("ICP demo");
@@ -193,18 +180,18 @@ int main (int argc, char* argv[])
   float txt_gray_lvl = 1.0 - bckgr_gray_level;
 
   // Original point cloud is white
-  pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_in_color_h (cloud_in, (int) 255 * txt_gray_lvl, (int) 255 * txt_gray_lvl,
+  pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_i_color_h (cloud_i, (int) 255 * txt_gray_lvl, (int) 255 * txt_gray_lvl,
                                                                              (int) 255 * txt_gray_lvl);
-  viewer.addPointCloud (cloud_in, cloud_in_color_h, "cloud_in_v1", v1);
-  viewer.addPointCloud (cloud_in, cloud_in_color_h, "cloud_in_v2", v2);
+  viewer.addPointCloud (cloud_i, cloud_i_color_h, "cloud_i_v1", v1);
+  viewer.addPointCloud (cloud_i, cloud_i_color_h, "cloud_i_v2", v2);
 
   // Transformed point cloud is green
-  pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_tr_color_h (cloud_tr, 20, 180, 20);
-  viewer.addPointCloud (cloud_tr, cloud_tr_color_h, "cloud_tr_v1", v1);
+  pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_c_original_color_h (cloud_c_original, 20, 180, 20);
+  viewer.addPointCloud (cloud_c_original, cloud_c_original_color_h, "cloud_c_v1", v1);
 
   // ICP aligned point cloud is red
-  pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_icp_color_h (cloud_icp, 180, 20, 20);
-  viewer.addPointCloud (cloud_icp, cloud_icp_color_h, "cloud_icp_v2", v2);
+  pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_c_color_h (cloud_c, 180, 20, 20);
+  viewer.addPointCloud (cloud_c, cloud_c_color_h, "cloud_c_v2", v2);
 
   // Adding text descriptions in each viewport
   viewer.addText ("White: Original point cloud\nGreen: Matrix transformed point cloud", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_1", v1);
@@ -220,8 +207,19 @@ int main (int argc, char* argv[])
   viewer.setBackgroundColor (bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, v2);
 
   // Set camera position and orientation
-  viewer.setCameraPosition (-3.68332, 2.94092, 5.71266, 0.289847, 0.921947, -0.256907, 0);
-  viewer.setSize (1280, 1024);  // Visualiser window size
+  // viewer.setCameraPosition (-3.68332, 2.94092, 5.71266, 0.289847, 0.921947, -0.256907, 0);
+  viewer.addCoordinateSystem (20.0);
+  viewer.initCameraParameters ();
+  viewer.setCameraPosition (100, 100, 100, 0, 0, 0, 0);
+
+  int size = 3;
+  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, size,"cloud_i_v1");
+  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, size,"cloud_i_v2");
+  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, size,"cloud_c_v1");
+  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, size,"cloud_c_v2");
+
+
+  viewer.setSize (2500, 1600);  // Visualiser window size
 
   // Register keyboard callback :
   viewer.registerKeyboardCallback (&keyboardEventOccurred, (void*) NULL);
@@ -236,26 +234,26 @@ int main (int argc, char* argv[])
     {
       // The Iterative Closest Point algorithm
       time.tic ();
-      icp.align (*cloud_icp);
+      icp.align (*cloud_c);
       std::cout << "Applied 1 ICP iteration in " << time.toc () << " ms" << std::endl;
 
       if (icp.hasConverged ())
       {
         printf ("\033[11A");  // Go up 11 lines in terminal output.
         printf ("\nICP has converged, score is %+.0e\n", icp.getFitnessScore ());
-        std::cout << "\nICP transformation " << ++iterations << " : cloud_icp -> cloud_in" << std::endl;
-        transformation_matrix *= icp.getFinalTransformation ().cast<double>();  // WARNING /!\ This is not accurate! For "educational" purpose only!
-        print4x4Matrix (transformation_matrix);  // Print the transformation between original pose and current pose
+        std::cout << "\nICP transformation " << ++iterations << " : cloud_c -> cloud_i" << std::endl;
+        // transformation_matrix *= icp.getFinalTransformation ().cast<double>();  // WARNING /!\ This is not accurate! For "educational" purpose only!
+        // print4x4Matrix (transformation_matrix);  // Print the transformation between original pose and current pose
 
         cumulative_transformation *= icp.getFinalTransformation().cast<double>(); // Update cumulative transformation
         print4x4Matrix(cumulative_transformation); // Print the current cumulative transformation matrix
-        printRREandRTE(cumulative_transformation, transformation_matrix); // Assuming 'transformation_matrix' is your ground truth
+        // printRREandRTE(cumulative_transformation, transformation_matrix); // Assuming 'transformation_matrix' is your ground truth
 
         ss.str ("");
         ss << iterations;
         std::string iterations_cnt = "ICP iterations = " + ss.str ();
         viewer.updateText (iterations_cnt, 10, 60, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "iterations_cnt");
-        viewer.updatePointCloud (cloud_icp, cloud_icp_color_h, "cloud_icp_v2");
+        viewer.updatePointCloud (cloud_c, cloud_c_color_h, "cloud_c_v2");
       }
       else
       {

@@ -126,7 +126,7 @@ int main (int argc, char* argv[])
   
   
   auto const poses = load_poses(std::string("poses.txt"));
-  std::cout << "Loaded file " << argv[2] << " (" << poses.size() << " transforms)" << std::endl;
+  std::cout << "Loaded file " << "poses.txt" << " (" << poses.size() << " transforms)" << std::endl;
 
   // The Iterative Closest Point algorithm
   time.tic ();
@@ -192,9 +192,16 @@ int main (int argc, char* argv[])
 
   // Set camera position and orientation
   // viewer.setCameraPosition (-3.68332, 2.94092, 5.71266, 0.289847, 0.921947, -0.256907, 0);
-  viewer.addCoordinateSystem (1.0);
+  viewer.addCoordinateSystem (20.0);
   viewer.initCameraParameters ();
   viewer.setCameraPosition (100, 100, 100, 0, 0, 0, 0);
+
+  int size = 3;
+  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, size,"cloud_i_v1");
+  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, size,"cloud_i_v2");
+  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, size,"cloud_c_v1");
+  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, size,"cloud_c_v2");
+
 
   viewer.setSize (2500, 1600);  // Visualiser window size
 

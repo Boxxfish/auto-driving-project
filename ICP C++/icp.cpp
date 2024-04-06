@@ -25,6 +25,7 @@ void print4x4Matrix (const Eigen::Matrix4d & matrix)
 
 void keyboardEventOccurred (const pcl::visualization::KeyboardEvent& event, void*)
 {
+  std::cout << "Space Pressed\n";
   if (event.getKeySym () == "space" && event.keyDown ())
     next_iteration = true;
 }
@@ -93,9 +94,9 @@ const double GPS_NOISE_METERS = 10.0;
 int main (int argc, char* argv[])
 {
   // The point clouds we will be using
-  PointCloudT::Ptr cloud_i (new PointCloudT);  // Original point cloud
-  PointCloudT::Ptr cloud_c_original (new PointCloudT);  // Transformed point cloud
-  PointCloudT::Ptr cloud_c (new PointCloudT);  // ICP output point cloud
+  PointCloudT::Ptr cloud_i (new PointCloudT);  // infrastructure point cloud <-- we are trying to align to this
+  PointCloudT::Ptr cloud_c_original (new PointCloudT);  // original car point cloud
+  PointCloudT::Ptr cloud_c (new PointCloudT);  // aligned car point cloud
 
   Eigen::Matrix4d cumulative_transformation = Eigen::Matrix4d::Identity(); // Initialize cumulative transformation
 
@@ -112,16 +113,16 @@ int main (int argc, char* argv[])
   std::string infra_pcd = std::string("../../splits/") + argv[1] + std::string("_i.pcd");
 
   int iterations = 1;  // Default number of ICP iterations
-  if (argc > 3)
+
+  // If the user passed the number of iteration as an argument
+  iterations = atoi (argv[2]);
+  std::cout << iterations;
+  if (iterations < 1)
   {
-    // If the user passed the number of iteration as an argument
-    iterations = atoi (argv[3]);
-    if (iterations < 1)
-    {
-      PCL_ERROR ("Number of initial iterations must be >= 1\n");
-      return (-1);
-    }
+    PCL_ERROR ("Number of initial iterations must be >= 1\n");
+    return (-1);
   }
+  
 
   pcl::console::TicToc time;
   time.tic ();
@@ -142,7 +143,10 @@ int main (int argc, char* argv[])
   
   
   auto const poses = load_poses(std::string("poses.txt"));
-  std::cout << "Loaded file " << "poses.txt" << " (" << poses.size() << " transforms)" << std::endl;
+  std::cout << "Loaded file " << "poses.txt" << " (" << poses.size() << " transforms)\n" << std::endl;
+  *cloud_c_original = *cloud_c;
+
+  std:cout << "ICP Starting\n";
 
   // The Iterative Closest Point algorithm
   time.tic ();
@@ -165,7 +169,6 @@ int main (int argc, char* argv[])
     return (-1);
   }
 
-  *cloud_c_original = *cloud_c;
 
   // Visualization
   pcl::visualization::PCLVisualizer viewer ("ICP demo");
@@ -194,8 +197,8 @@ int main (int argc, char* argv[])
   viewer.addPointCloud (cloud_c, cloud_c_color_h, "cloud_c_v2", v2);
 
   // Adding text descriptions in each viewport
-  viewer.addText ("White: Original point cloud\nGreen: Matrix transformed point cloud", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_1", v1);
-  viewer.addText ("White: Original point cloud\nRed: ICP aligned point cloud", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_2", v2);
+  viewer.addText ("White: infrasturcture pc to align to\nGreen: car pc unaligned", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_1", v1);
+  viewer.addText ("White: infrasturcture pc to align to\nRed: car pc aligned", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_2", v2);
 
   std::stringstream ss;
   ss << iterations;
@@ -221,47 +224,53 @@ int main (int argc, char* argv[])
 
   viewer.setSize (2500, 1600);  // Visualiser window size
 
-  // Register keyboard callback :
-  viewer.registerKeyboardCallback (&keyboardEventOccurred, (void*) NULL);
+  // // Register keyboard callback :
+  // viewer.registerKeyboardCallback (&keyboardEventOccurred, (void*) NULL);
 
-  // Display the visualiser
-  while (!viewer.wasStopped ())
-  {
+  // std::cout << "just outside while loop\n";
+  // // Display the visualiser
+  // while (!viewer.wasStopped ())
+  // {
+  //   std::cout << "in while loop\n ";
+
     viewer.spin ();
 
-    // The user pressed "space" :
-    if (next_iteration)
-    {
-      // The Iterative Closest Point algorithm
-      time.tic ();
-      icp.align (*cloud_c);
-      std::cout << "Applied 1 ICP iteration in " << time.toc () << " ms" << std::endl;
+  //   // The user pressed "space" :
+  //   if (next_iteration)
+  //   {
+  //     std::cout << "in next icp iteration";
+  //     // The Iterative Closest Point algorithm
+  //     time.tic ();
+  //     icp.align (*cloud_c);
+  //     std::cout << "Applied 1 ICP iteration in " << time.toc () << " ms" << std::endl;
 
-      if (icp.hasConverged ())
-      {
-        printf ("\033[11A");  // Go up 11 lines in terminal output.
-        printf ("\nICP has converged, score is %+.0e\n", icp.getFitnessScore ());
-        std::cout << "\nICP transformation " << ++iterations << " : cloud_c -> cloud_i" << std::endl;
-        // transformation_matrix *= icp.getFinalTransformation ().cast<double>();  // WARNING /!\ This is not accurate! For "educational" purpose only!
-        // print4x4Matrix (transformation_matrix);  // Print the transformation between original pose and current pose
+  //     if (icp.hasConverged ())
+  //     {
+  //       printf ("\033[11A");  // Go up 11 lines in terminal output.
+  //       printf ("\nICP has converged, score is %+.0e\n", icp.getFitnessScore ());
+  //       std::cout << "\nICP transformation " << ++iterations << " : cloud_c -> cloud_i" << std::endl;
+  //       // transformation_matrix *= icp.getFinalTransformation ().cast<double>();  // WARNING /!\ This is not accurate! For "educational" purpose only!
+  //       // print4x4Matrix (transformation_matrix);  // Print the transformation between original pose and current pose
 
-        cumulative_transformation *= icp.getFinalTransformation().cast<double>(); // Update cumulative transformation
-        print4x4Matrix(cumulative_transformation); // Print the current cumulative transformation matrix
-        // printRREandRTE(cumulative_transformation, transformation_matrix); // Assuming 'transformation_matrix' is your ground truth
+  //       cumulative_transformation *= icp.getFinalTransformation().cast<double>(); // Update cumulative transformation
+  //       print4x4Matrix(cumulative_transformation); // Print the current cumulative transformation matrix
+  //       // printRREandRTE(cumulative_transformation, transformation_matrix); // Assuming 'transformation_matrix' is your ground truth
 
-        ss.str ("");
-        ss << iterations;
-        std::string iterations_cnt = "ICP iterations = " + ss.str ();
-        viewer.updateText (iterations_cnt, 10, 60, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "iterations_cnt");
-        viewer.updatePointCloud (cloud_c, cloud_c_color_h, "cloud_c_v2");
-      }
-      else
-      {
-        PCL_ERROR ("\nICP has not converged.\n");
-        return (-1);
-      }
-    }
-    next_iteration = false;
-  }
+  //       ss.str ("");
+  //       ss << iterations;
+  //       std::string iterations_cnt = "ICP iterations = " + ss.str ();
+  //       viewer.updateText (iterations_cnt, 10, 60, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "iterations_cnt");
+  //       viewer.updatePointCloud (cloud_c, cloud_c_color_h, "cloud_c_v2");
+  //     }
+  //     else
+  //     {
+  //       PCL_ERROR ("\nICP has not converged.\n");
+  //       return (-1);
+  //     }
+  //   }
+  //   next_iteration = false; 
+  // }
+
+  // std::cout << "program ended\n";
   return (0);
 }

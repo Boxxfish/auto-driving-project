@@ -143,7 +143,7 @@ int main (int argc, char* argv[])
   std::cout << "\nLoaded file " << infra_pcd << " (" << cloud_i->size () << " points) in " << time.toc () << " ms\n" << std::endl;
   
   
-  auto const poses = load_poses(std::string("poses.txt"));
+  auto const poses = load_poses(std::string("../pose.txt"));
   std::cout << "Loaded file " << "poses.txt" << " (" << poses.size() << " transforms)\n" << std::endl;
   *cloud_c_original = *cloud_c;
 

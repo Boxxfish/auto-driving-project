@@ -111,6 +111,7 @@ int main (int argc, char* argv[])
 
   std::string car_pcd = std::string("../../splits/") + argv[1] + std::string("_v.pcd");
   std::string infra_pcd = std::string("../../splits/") + argv[1] + std::string("_i.pcd");
+  int data_num = atoi(argv[1]);
 
   int iterations = 1;  // Default number of ICP iterations
 
@@ -223,54 +224,8 @@ int main (int argc, char* argv[])
 
 
   viewer.setSize (2500, 1600);  // Visualiser window size
+  viewer.spin ();
 
-  // // Register keyboard callback :
-  // viewer.registerKeyboardCallback (&keyboardEventOccurred, (void*) NULL);
 
-  // std::cout << "just outside while loop\n";
-  // // Display the visualiser
-  // while (!viewer.wasStopped ())
-  // {
-  //   std::cout << "in while loop\n ";
-
-    viewer.spin ();
-
-  //   // The user pressed "space" :
-  //   if (next_iteration)
-  //   {
-  //     std::cout << "in next icp iteration";
-  //     // The Iterative Closest Point algorithm
-  //     time.tic ();
-  //     icp.align (*cloud_c);
-  //     std::cout << "Applied 1 ICP iteration in " << time.toc () << " ms" << std::endl;
-
-  //     if (icp.hasConverged ())
-  //     {
-  //       printf ("\033[11A");  // Go up 11 lines in terminal output.
-  //       printf ("\nICP has converged, score is %+.0e\n", icp.getFitnessScore ());
-  //       std::cout << "\nICP transformation " << ++iterations << " : cloud_c -> cloud_i" << std::endl;
-  //       // transformation_matrix *= icp.getFinalTransformation ().cast<double>();  // WARNING /!\ This is not accurate! For "educational" purpose only!
-  //       // print4x4Matrix (transformation_matrix);  // Print the transformation between original pose and current pose
-
-  //       cumulative_transformation *= icp.getFinalTransformation().cast<double>(); // Update cumulative transformation
-  //       print4x4Matrix(cumulative_transformation); // Print the current cumulative transformation matrix
-  //       // printRREandRTE(cumulative_transformation, transformation_matrix); // Assuming 'transformation_matrix' is your ground truth
-
-  //       ss.str ("");
-  //       ss << iterations;
-  //       std::string iterations_cnt = "ICP iterations = " + ss.str ();
-  //       viewer.updateText (iterations_cnt, 10, 60, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "iterations_cnt");
-  //       viewer.updatePointCloud (cloud_c, cloud_c_color_h, "cloud_c_v2");
-  //     }
-  //     else
-  //     {
-  //       PCL_ERROR ("\nICP has not converged.\n");
-  //       return (-1);
-  //     }
-  //   }
-  //   next_iteration = false; 
-  // }
-
-  // std::cout << "program ended\n";
   return (0);
 }

@@ -1,6 +1,10 @@
 #include <iostream>
 #include <string>
 #include <random>
+#include <typeinfo>
+#include <fstream>
+#include <sstream>
+#include <cmath> // for radians conversion
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
@@ -12,6 +16,123 @@ typedef pcl::PointCloud<PointT> PointCloudT;
 #include <Eigen/Geometry> // Include this for additional Eigen functionalities
 
 bool next_iteration = false;
+
+struct Location {
+    double x, y, z;
+};
+
+struct Rotation {
+    double pitch, yaw, roll;
+};
+
+void printMatrix(const std::string& name, const Eigen::Matrix4d& matrix) {
+    std::cout << name << ":\n" << matrix << "\n\n";
+}
+
+int parseLine(const std::string& line, Location& loc, Rotation& rot) {
+  std::cout << "in parse line" << std::endl;
+  std::cout << line << std::endl;
+
+  std::istringstream iss(line);
+  std::string token;
+
+  int frame_num;
+  
+  // Get frame num
+  iss >> token;
+  frame_num = stoi(token);
+  std::cout << frame_num << std::endl;
+
+  //ex token = "Transform(Location(x=-112.302399,"
+  iss >> token;
+  std::cout << token << std::endl;
+  std::string delimiter_start = "=";
+  std::string delimiter_end = ",";
+  token = token.substr(token.find(delimiter_start)+1, token.find(delimiter_end)-token.find(delimiter_start));
+  loc.x = stod(token);
+  std::cout << loc.x << std::endl;
+
+  //ex token = "y=2.822677,"
+  iss >> token;
+  std::cout << token << std::endl;
+  delimiter_start = "=";
+  delimiter_end = ",";
+  token = token.substr(token.find(delimiter_start)+1, token.find(delimiter_end)-token.find(delimiter_start));
+  loc.y = stod(token);
+  std::cout << loc.y << std::endl;
+
+  //ex token = "z=3.647835),"
+  iss >> token;
+  std::cout << token << std::endl;
+  delimiter_start = "=";
+  delimiter_end = ")";
+  token = token.substr(token.find(delimiter_start)+1, token.find(delimiter_end)-token.find(delimiter_start));
+  loc.z = stod(token);
+  std::cout << loc.z << std::endl;
+
+  //ex token = "Rotation(pitch=0.000000,"
+  iss >> token;
+  std::cout << token << std::endl;
+  delimiter_start = "=";
+  delimiter_end = ",";
+  token = token.substr(token.find(delimiter_start)+1, token.find(delimiter_end)-token.find(delimiter_start));
+  rot.pitch = stod(token);
+  std::cout << rot.pitch << std::endl;
+
+
+  //ex token = "yaw=-0.139465,"
+  iss >> token;
+  std::cout << token << std::endl;
+  delimiter_start = "=";
+  delimiter_end = ",";
+  token = token.substr(token.find(delimiter_start)+1, token.find(delimiter_end)-token.find(delimiter_start));
+  rot.yaw = stod(token);
+  std::cout << rot.yaw << std::endl;
+
+  //ex token = "roll=0.000000))"
+  iss >> token;
+  std::cout << token << std::endl;
+  delimiter_start = "=";
+  delimiter_end = ")";
+  token = token.substr(token.find(delimiter_start)+1, token.find(delimiter_end)-token.find(delimiter_start));
+  rot.roll = stod(token);
+  std::cout << rot.roll << std::endl;
+
+  return frame_num;
+}
+
+void generate_matrix(){
+  std::ifstream file("../../splits/pose_c.txt");
+  std::string line;
+  std::cout << "in generate matrix" << std::endl;
+
+  while (std::getline(file, line)) {
+      std::cout << "reading a new line" << std::endl;
+      Location loc;
+      Rotation rot;
+      parseLine(line, loc, rot);
+
+      // Convert rotation angles to radians
+      rot.pitch = rot.pitch * M_PI / 180.0;
+      rot.yaw = rot.yaw * M_PI / 180.0;
+      rot.roll = rot.roll * M_PI / 180.0;
+
+      // Calculate translation matrix
+      Eigen::Translation3d translation(loc.x, loc.y, loc.z);
+      // Eigen::Matrix4d translationMatrix = translation.matrix();
+
+      // Calculate rotation matrix
+      Eigen::AngleAxisd rollAngle(rot.roll, Eigen::Vector3d::UnitX());
+      Eigen::AngleAxisd yawAngle(rot.yaw, Eigen::Vector3d::UnitY());
+      Eigen::AngleAxisd pitchAngle(rot.pitch, Eigen::Vector3d::UnitZ());
+      Eigen::Quaterniond quaternion = rollAngle * yawAngle * pitchAngle;
+      std::cout << quaternion;
+      // Eigen::Matrix4d rotationMatrix = quaternion.toRotationMatrix();
+
+      // printMatrix("Translation Matrix", translationMatrix);
+      // printMatrix("Rotation Matrix", rotationMatrix);
+  }
+}
 
 void print4x4Matrix (const Eigen::Matrix4d & matrix)
 {
@@ -94,6 +215,10 @@ const double GPS_NOISE_METERS = 10.0;
 
 int main (int argc, char* argv[])
 {
+
+  generate_matrix();
+  return (0);
+
   // The point clouds we will be using
   PointCloudT::Ptr cloud_i (new PointCloudT);  // infrastructure point cloud <-- we are trying to align to this
   PointCloudT::Ptr cloud_c_original (new PointCloudT);  // original car point cloud
@@ -104,7 +229,7 @@ int main (int argc, char* argv[])
   // Checking program arguments
   if (argc < 3)
   {
-    printf ("ICP Point Cloud Merger.\n\n")
+    printf ("ICP Point Cloud Merger.\n\n");
     printf ("Usage :\n");
     printf ("  icp <split_num> <num_ICP_iterations>\n");
     return (-1);
@@ -143,10 +268,18 @@ int main (int argc, char* argv[])
   }
   std::cout << "\nLoaded file " << infra_pcd << " (" << cloud_i->size () << " points) in " << time.toc () << " ms\n" << std::endl;
   
+
+  std::vector<Eigen::Matrix4d> poses_i = load_poses(std::string("../../pose.txt"));
+
+ //std::vector<Eigen::Matrix4d> poses_i = load_poses(std::string("../../splits/pose_i.txt"));
+  //std::cout << poses_i[0];
+  std::cout << "Loaded file " << "poses_i.txt" << " (" << poses_i.size() << " transforms)\n" << std::endl;
+  std::cout << poses_i[0];
+
+// std::vector<Eigen::Matrix4d> poses_c = load_poses(std::string("../../splits/pose_c.txt"));
+  //std::cout << "Loaded file " << "poses_c.txt" << " (" << poses_c.size() << " transforms)\n" << std::endl;
   
-  auto const poses = load_poses(std::string("../pose.txt"));
-  std::cout << "Loaded file " << "poses.txt" << " (" << poses.size() << " transforms)\n" << std::endl;
-  *cloud_c_original = *cloud_c;
+  *cloud_c_original = *cloud_c; //create two different car point clouds for comparison
 
   std:cout << "ICP Starting\n";
 

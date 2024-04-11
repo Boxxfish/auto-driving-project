@@ -52,6 +52,7 @@ void printRREandRTE(const Eigen::Matrix4d &current_transformation, const Eigen::
     std::cout << "RRE: " << RRE * (180.0 / M_PI) << " degrees" << std::endl; // Convert RRE from radians to degrees
 }
 
+// conatiles list of transofrm matricies organized frame 0 to end
 // Loads poses from a file.
 std::vector<Eigen::Matrix4d> load_poses(const std::string& path) {
   std::ifstream pose_file;
@@ -103,9 +104,9 @@ int main (int argc, char* argv[])
   // Checking program arguments
   if (argc < 3)
   {
+    printf ("ICP Point Cloud Merger.\n\n")
     printf ("Usage :\n");
-    printf ("\t\t%s split_data_number number_of_ICP_iterations\n", argv[0]);
-    PCL_ERROR ("Provide one pcd file.\n");
+    printf ("  icp <split_num> <num_ICP_iterations>\n");
     return (-1);
   }
 

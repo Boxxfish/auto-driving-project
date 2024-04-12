@@ -122,33 +122,33 @@ void generate_matrix(Eigen::Matrix4d& translation_matrix, const std::string& pat
       std::cout << "Translation Matrix: \n" << translation_matrix << std::endl;
 
       // This is another way to get the rotation matrix, it is giving me the same result too
-      
+
       // Calculate rotation matrix
-      // Eigen::AngleAxisd rollAngle(rot.roll, Eigen::Vector3d::UnitX());
-      // std::cout << "Roll Matrix: \n" << rollAngle.matrix() <<std::endl;
-      // Eigen::AngleAxisd yawAngle(rot.yaw, Eigen::Vector3d::UnitY());
-      // std::cout << "Yaw Matrix: \n" <<  yawAngle.matrix() <<std::endl;
+      Eigen::AngleAxisd rollAngle(rot.roll, Eigen::Vector3d::UnitX());
+      std::cout << "Roll Matrix: \n" << rollAngle.matrix() <<std::endl;
+      Eigen::AngleAxisd yawAngle(rot.yaw, Eigen::Vector3d::UnitY());
+      std::cout << "Yaw Matrix: \n" <<  yawAngle.matrix() <<std::endl;
 
-      // Eigen::AngleAxisd pitchAngle(rot.pitch, Eigen::Vector3d::UnitZ());
-      // std::cout << "Pitch Matrix: \n" << pitchAngle.matrix() <<std::endl;
+      Eigen::AngleAxisd pitchAngle(rot.pitch, Eigen::Vector3d::UnitZ());
+      std::cout << "Pitch Matrix: \n" << pitchAngle.matrix() <<std::endl;
 
-      // Eigen::Quaterniond quaternion = rollAngle * yawAngle * pitchAngle;
-      // std::cout << "Quaternion: \n" << quaternion << std::endl;
-      // Eigen::Matrix3d rotationMatrix = quaternion.toRotationMatrix();
+      Eigen::Quaterniond quaternion = rollAngle * yawAngle * pitchAngle;
+      std::cout << "Quaternion: \n" << quaternion << std::endl;
+      Eigen::Matrix3d rotationMatrix = quaternion.toRotationMatrix();
 
       // Calculate sin and cos of the angles
-      double c1 = std::cos(rot.yaw);
-      double c2 = std::cos(rot.pitch);
-      double c3 = std::cos(rot.roll);
-      double s1 = std::sin(rot.yaw);
-      double s2 = std::sin(rot.pitch);
-      double s3 = std::sin(rot.roll);
+      // double c1 = std::cos(rot.yaw);
+      // double c2 = std::cos(rot.pitch);
+      // double c3 = std::cos(rot.roll);
+      // double s1 = std::sin(rot.yaw);
+      // double s2 = std::sin(rot.pitch);
+      // double s3 = std::sin(rot.roll);
 
-      // Create the rotation matrix
-      Eigen::Matrix3d rotationMatrix;
-      rotationMatrix << c1 * c2, c1 * s2 * s3 - s1 * c3, c1 * s2 * c3 + s1 * s3,
-                        s1 * c2, s1 * s2 * s3 + c1 * c3, s1 * s2 * c3 - c1 * s3,
-                        -s2, c2 * s3, c2 * c3;
+      // // Create the rotation matrix
+      // Eigen::Matrix3d rotationMatrix;
+      // rotationMatrix << c1 * c2, c1 * s2 * s3 - s1 * c3, c1 * s2 * c3 + s1 * s3,
+      //                   s1 * c2, s1 * s2 * s3 + c1 * c3, s1 * s2 * c3 - c1 * s3,
+      //                   -s2, c2 * s3, c2 * c3;
 
       // Eigen::Matrix3d rotationMatrix = rollAngle * yawAngle * pitchAngle;
 
@@ -229,7 +229,9 @@ std::vector<Eigen::Matrix4d> load_poses(const std::string& path) {
         line.erase(0, line.find(space) + 1);
         elems.push_back(elem);
       }
-      std::getline(pose_file, line);
+      if (row < 3) {
+        std::getline(pose_file, line);
+      }
     }
     auto const pose = Eigen::Map<Eigen::Matrix<double, 4, 4>>(elems.data());
     poses.push_back(pose);
@@ -309,28 +311,31 @@ int main (int argc, char* argv[])
   
 
   // std::vector<Eigen::Matrix4d> poses_i = load_poses(std::string("../../pose.txt"));
-  Eigen::Matrix4d c_transform_matrix = Eigen::Matrix4d::Identity();
-  Eigen::Matrix4d i_transform_matrix = Eigen::Matrix4d::Identity();
-  generate_matrix(c_transform_matrix, std::string("../../splits/pose_c.txt"),data_num);
-  generate_matrix(i_transform_matrix, std::string("../../splits/pose_i.txt"),data_num);
-  cout << "c transform matrix:\n" << c_transform_matrix << std::endl;
-  cout << "i transform matrix:\n" << i_transform_matrix << std::endl;
+  // Eigen::Matrix4d c_transform_matrix = Eigen::Matrix4d::Identity();
+  // Eigen::Matrix4d i_transform_matrix = Eigen::Matrix4d::Identity();
+  // generate_matrix(c_transform_matrix, std::string("../../splits/pose_c.txt"),data_num);
+  // generate_matrix(i_transform_matrix, std::string("../../splits/pose_i.txt"),data_num);
+  // cout << "c transform matrix:\n" << c_transform_matrix << std::endl;
+  // cout << "i transform matrix:\n" << i_transform_matrix << std::endl;
 
-  pcl::transformPointCloud (*cloud_i, *cloud_i, i_transform_matrix);
-  pcl::transformPointCloud (*cloud_c, *cloud_c, c_transform_matrix);
+  std::vector<Eigen::Matrix4d> poses_i = load_poses(std::string("../../splits/I_W.txt"));
+  std::cout << "Loaded file " << "poses_i.txt" << " (" << poses_i.size() << " transforms)\n" << std::endl;
+  std::cout << poses_i[0] << std::endl;
+  std::vector<Eigen::Matrix4d> poses_c = load_poses(std::string("../../splits/V_W.txt"));
+  std::cout << "Loaded file " << "poses_c.txt" << " (" << poses_c.size() << " transforms)\n" << std::endl;
+  std::cout << poses_c[data_num] << std::endl;
+
+  Eigen::Matrix4d temp = poses_i[0].transpose();
+  Eigen::Matrix4d temp2 = poses_c[0].transpose();
+
+  pcl::transformPointCloud (*cloud_i, *cloud_i, temp);
+  pcl::transformPointCloud (*cloud_c, *cloud_c, temp2);
   *cloud_c_original = *cloud_c; //create two different car point clouds for comparison
 
 
 
 
- //std::vector<Eigen::Matrix4d> poses_i = load_poses(std::string("../../splits/pose_i.txt"));
-  //std::cout << poses_i[0];
-  // std::cout << "Loaded file " << "poses_i.txt" << " (" << poses_i.size() << " transforms)\n" << std::endl;
-  // std::cout << poses_i[0];
 
-// std::vector<Eigen::Matrix4d> poses_c = load_poses(std::string("../../splits/pose_c.txt"));
-  //std::cout << "Loaded file " << "poses_c.txt" << " (" << poses_c.size() << " transforms)\n" << std::endl;
-  
 
   std:cout << "ICP Starting\n";
 

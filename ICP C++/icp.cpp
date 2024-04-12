@@ -121,6 +121,8 @@ void generate_matrix(Eigen::Matrix4d& translation_matrix, const std::string& pat
       translation_matrix.block<3, 1>(0, 3) = Eigen::Vector3d(loc.x, loc.y, loc.z);
       std::cout << "Translation Matrix: \n" << translation_matrix << std::endl;
 
+      // This is another way to get the rotation matrix, it is giving me the same result too
+      
       // Calculate rotation matrix
       // Eigen::AngleAxisd rollAngle(rot.roll, Eigen::Vector3d::UnitX());
       // std::cout << "Roll Matrix: \n" << rollAngle.matrix() <<std::endl;

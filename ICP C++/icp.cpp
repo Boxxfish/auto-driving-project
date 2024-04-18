@@ -234,7 +234,7 @@ std::vector<Eigen::Matrix4d> load_poses(const std::string& path) {
       }
     }
     auto const pose = Eigen::Map<Eigen::Matrix<double, 4, 4>>(elems.data());
-    poses.push_back(pose);
+    poses.push_back(pose.transpose());
   }
   pose_file.close();
   return poses;
@@ -342,11 +342,9 @@ int main (int argc, char* argv[])
   add_noise_to_loc(poses_c[data_num],5);
   std::cout << poses_c[data_num] << std::endl;
 
-  Eigen::Matrix4d temp = poses_i[0].transpose();
-  Eigen::Matrix4d temp2 = poses_c[0].transpose();
 
-  pcl::transformPointCloud (*cloud_i, *cloud_i, temp);
-  pcl::transformPointCloud (*cloud_c, *cloud_c, temp2);
+  pcl::transformPointCloud (*cloud_i, *cloud_i, poses_i[0]);
+  pcl::transformPointCloud (*cloud_c, *cloud_c, poses_c[data_num]);
   *cloud_c_original = *cloud_c; //create two different car point clouds for comparison
 
   std:cout << "ICP Starting\n";

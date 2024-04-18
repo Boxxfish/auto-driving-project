@@ -238,7 +238,7 @@ void add_noise_to_loc(Eigen::Matrix4d& pose, double stddev = 0.0) {
     std::normal_distribution<double> dist(0.0, stddev);
     // Modify only x and z coords
     pose(0,3) += dist(generator);
-    pose(2,3) += dist(generator);
+    pose(1,3) += dist(generator);
   }
   return;
 }
@@ -325,6 +325,7 @@ int main (int argc, char* argv[])
   icp.setInputSource (cloud_c); //cloud_c --> cloud_c
   icp.setInputTarget (cloud_i); //cloud_i --> i
   icp.align (*cloud_c);
+
   std::cout << "Applied " << iterations << " ICP iteration(s) in " << time.toc () << " ms" << std::endl;
 
   if (icp.hasConverged ())

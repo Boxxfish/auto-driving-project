@@ -111,11 +111,6 @@ void generate_matrix(Eigen::Matrix4d& translation_matrix, const std::string& pat
 
 
     if (frame_num-1 == data_num){
-      // // Convert rotation angles to radians
-      // rot.pitch = rot.pitch * M_PI / 180.0;
-      // rot.yaw = rot.yaw * M_PI / 180.0;
-      // rot.roll = rot.roll * M_PI / 180.0;
-
       // Defining a rotation matrix and translation vector
       // Calculate translation matrix
       translation_matrix.block<3, 1>(0, 3) = Eigen::Vector3d(loc.x, loc.y, loc.z);
@@ -135,23 +130,6 @@ void generate_matrix(Eigen::Matrix4d& translation_matrix, const std::string& pat
       Eigen::Quaterniond quaternion = rollAngle * yawAngle * pitchAngle;
       std::cout << "Quaternion: \n" << quaternion << std::endl;
       Eigen::Matrix3d rotationMatrix = quaternion.toRotationMatrix();
-
-      // Calculate sin and cos of the angles
-      // double c1 = std::cos(rot.yaw);
-      // double c2 = std::cos(rot.pitch);
-      // double c3 = std::cos(rot.roll);
-      // double s1 = std::sin(rot.yaw);
-      // double s2 = std::sin(rot.pitch);
-      // double s3 = std::sin(rot.roll);
-
-      // // Create the rotation matrix
-      // Eigen::Matrix3d rotationMatrix;
-      // rotationMatrix << c1 * c2, c1 * s2 * s3 - s1 * c3, c1 * s2 * c3 + s1 * s3,
-      //                   s1 * c2, s1 * s2 * s3 + c1 * c3, s1 * s2 * c3 - c1 * s3,
-      //                   -s2, c2 * s3, c2 * c3;
-
-      // Eigen::Matrix3d rotationMatrix = rollAngle * yawAngle * pitchAngle;
-
 
       std::cout << "Rotation Matrix: \n" << rotationMatrix << std::endl;
 
@@ -321,15 +299,6 @@ int main (int argc, char* argv[])
     return (-1);
   }
   std::cout << "\nLoaded file " << infra_pcd << " (" << cloud_i->size () << " points) in " << time.toc () << " ms\n" << std::endl;
-  
-
-  // std::vector<Eigen::Matrix4d> poses_i = load_poses(std::string("../../pose.txt"));
-  // Eigen::Matrix4d c_transform_matrix = Eigen::Matrix4d::Identity();
-  // Eigen::Matrix4d i_transform_matrix = Eigen::Matrix4d::Identity();
-  // generate_matrix(c_transform_matrix, std::string("../../splits/pose_c.txt"),data_num);
-  // generate_matrix(i_transform_matrix, std::string("../../splits/pose_i.txt"),data_num);
-  // cout << "c transform matrix:\n" << c_transform_matrix << std::endl;
-  // cout << "i transform matrix:\n" << i_transform_matrix << std::endl;
 
   std::vector<Eigen::Matrix4d> poses_i = load_poses(std::string("../../splits/I_W.txt"));
   std::cout << "Loaded file " << "poses_i.txt" << " (" << poses_i.size() << " transforms)\n" << std::endl;
@@ -356,7 +325,6 @@ int main (int argc, char* argv[])
   icp.setInputSource (cloud_c); //cloud_c --> cloud_c
   icp.setInputTarget (cloud_i); //cloud_i --> i
   icp.align (*cloud_c);
-  icp.setMaximumIterations (1);  // We set this variable to 1 for the next time we will call .align () function
   std::cout << "Applied " << iterations << " ICP iteration(s) in " << time.toc () << " ms" << std::endl;
 
   if (icp.hasConverged ())

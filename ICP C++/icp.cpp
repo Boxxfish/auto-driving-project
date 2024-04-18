@@ -253,6 +253,19 @@ Eigen::Matrix<double, 3, 1> get_loc(const Eigen::Matrix4d& pose, double stddev =
   return loc;
 }
 
+// Returns the location from a pose, with optional gaussian noise.
+void add_noise_to_loc(Eigen::Matrix4d& pose, double stddev = 0.0) {
+  if (stddev > 0.0) {
+    std::default_random_engine generator;
+    std::normal_distribution<double> dist(0.0, stddev);
+    // Modify only x and z coords
+    pose(3,0) += dist(generator);
+    pose(3,2) += dist(generator);
+  }
+  return;
+}
+
+
 const double GPS_NOISE_METERS = 10.0;
 
 int main (int argc, char* argv[])
@@ -321,8 +334,12 @@ int main (int argc, char* argv[])
   std::vector<Eigen::Matrix4d> poses_i = load_poses(std::string("../../splits/I_W.txt"));
   std::cout << "Loaded file " << "poses_i.txt" << " (" << poses_i.size() << " transforms)\n" << std::endl;
   std::cout << poses_i[0] << std::endl;
+
   std::vector<Eigen::Matrix4d> poses_c = load_poses(std::string("../../splits/V_W.txt"));
   std::cout << "Loaded file " << "poses_c.txt" << " (" << poses_c.size() << " transforms)\n" << std::endl;
+  std::cout << poses_c[data_num] << std::endl;
+  std::cout << "Adding noise" <<std::endl;
+  add_noise_to_loc(poses_c[data_num],5);
   std::cout << poses_c[data_num] << std::endl;
 
   Eigen::Matrix4d temp = poses_i[0].transpose();
@@ -331,11 +348,6 @@ int main (int argc, char* argv[])
   pcl::transformPointCloud (*cloud_i, *cloud_i, temp);
   pcl::transformPointCloud (*cloud_c, *cloud_c, temp2);
   *cloud_c_original = *cloud_c; //create two different car point clouds for comparison
-
-
-
-
-
 
   std:cout << "ICP Starting\n";
 

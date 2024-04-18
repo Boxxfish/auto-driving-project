@@ -259,8 +259,8 @@ void add_noise_to_loc(Eigen::Matrix4d& pose, double stddev = 0.0) {
     std::default_random_engine generator;
     std::normal_distribution<double> dist(0.0, stddev);
     // Modify only x and z coords
-    pose(3,0) += dist(generator);
-    pose(3,2) += dist(generator);
+    pose(0,3) += dist(generator);
+    pose(2,3) += dist(generator);
   }
   return;
 }
@@ -339,7 +339,7 @@ int main (int argc, char* argv[])
   std::cout << "Loaded file " << "poses_c.txt" << " (" << poses_c.size() << " transforms)\n" << std::endl;
   std::cout << poses_c[data_num] << std::endl;
   std::cout << "Adding noise" <<std::endl;
-  add_noise_to_loc(poses_c[data_num],5);
+  add_noise_to_loc(poses_c[data_num],10);
   std::cout << poses_c[data_num] << std::endl;
 
 

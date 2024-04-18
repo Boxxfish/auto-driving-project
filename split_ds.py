@@ -98,7 +98,7 @@ def check_overlap(
 
 
 if __name__ == "__main__":
-    for dataset in ["Dataset_1", "Dataset_2", "Dataset_3"]:
+    for dataset in ["Dataset_1", "Dataset_2"]:
         for sub_ds in ["D1", "D2", "D3", "D4", "D5"]:
             data_path = Path("data/carla_ali")
             bag_path = data_path / "bag_data" / "carla"

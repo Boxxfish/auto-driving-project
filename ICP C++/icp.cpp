@@ -6,6 +6,7 @@
 #include <sstream>
 #include <cmath> // for radians conversion
 
+#include <pcl/filters/passthrough.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <pcl/registration/icp.h>
@@ -308,20 +309,38 @@ int main (int argc, char* argv[])
   std::cout << "Loaded file " << "poses_c.txt" << " (" << poses_c.size() << " transforms)\n" << std::endl;
   std::cout << poses_c[data_num] << std::endl;
   std::cout << "Adding noise" <<std::endl;
-  add_noise_to_loc(poses_c[data_num],10);
+  add_noise_to_loc(poses_c[data_num],3);
   std::cout << poses_c[data_num] << std::endl;
 
 
   pcl::transformPointCloud (*cloud_i, *cloud_i, poses_i[0]);
   pcl::transformPointCloud (*cloud_c, *cloud_c, poses_c[data_num]);
-  *cloud_c_original = *cloud_c; //create two different car point clouds for comparison
+
+
+  pcl::PassThrough<pcl::PointXYZ> pass_c;
+  pass_c.setInputCloud(cloud_c);
+  pass_c.setFilterFieldName("z");
+  pass_c.setFilterLimits(-0.3,0.3);
+  pass_c.setNegative(true);
+  pass_c.filter(*cloud_c);
+
+
+  pcl::PassThrough<pcl::PointXYZ> pass_i;
+  pass_i.setInputCloud(cloud_i);
+  pass_i.setFilterFieldName("z");
+  pass_i.setFilterLimits(-0.3,0.3);
+  pass_i.setNegative(true);
+  pass_i.filter(*cloud_i);
+
+  *cloud_c_original = *cloud_c; //create two different car point clouds for comon
 
   std:cout << "ICP Starting\n";
 
-  // The Iterative Closest Point algorithm
+  //The Iterative Closest Point algorithm
   time.tic ();
   pcl::IterativeClosestPoint<PointT, PointT> icp;
   icp.setMaximumIterations (iterations);
+  icp.setMaxCorrespondenceDistance(3);
   icp.setInputSource (cloud_c); //cloud_c --> cloud_c
   icp.setInputTarget (cloud_i); //cloud_i --> i
   icp.align (*cloud_c);
@@ -338,6 +357,27 @@ int main (int argc, char* argv[])
     PCL_ERROR ("\nICP has not converged.\n");
     return (-1);
   }
+
+
+
+
+  // time.tic ();
+  // pcl::IterativeClosestPoint<PointT, PointT> icp;
+  // icp.setMaximumIterations (1);
+  // icp.setMaxCorrespondenceDistance(3);
+  // icp.setInputSource (cloud_c); //cloud_c --> cloud_c
+  // icp.setInputTarget (cloud_i); //cloud_i --> i
+  // int i;
+  // for (i=0; i < iterations; i++){
+  //   icp.align (*cloud_c);
+  //   std::cout << "ICP Iteration: " << i << "  ICP score is " << icp.getFitnessScore () << std::endl;
+  //   if (icp.getFitnessScore() < 0.5){
+  //     break;
+  //   }
+  // }
+  // std::cout << "Applied " << i << " ICP iteration(s) in " << time.toc () << " ms" << std::endl;
+  // std::cout << "\nICP has converged, score is " << icp.getFitnessScore () << std::endl;
+  // std::cout << "\nICP transformation " << iterations << " : cloud_c -> cloud_i" << std::endl;
 
 
   // Visualization

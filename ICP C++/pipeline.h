@@ -2,6 +2,7 @@
 #include <pcl/point_types.h>
 #include <pcl/registration/icp.h>
 
+// TODO: Replace this with our actual dataset stuff.
 class Frame
 {
 
@@ -45,8 +46,15 @@ align_icp(const PointCloudTargetConstPtr &src, const PointCloudTargetConstPtr &t
 }
 
 /// Given a point cloud, returns a new point cloud with ground points removed.
-auto remove_ground(const PointCloudTargetConstPtr &src) -> PointCloud
+auto remove_ground(const PointCloudTargetConstPtr &src) -> const PointCloudTargetConstPtr&
 {
+    pcl::PassThrough<pcl::PointXYZ> pass_c;
+    pass_c.setInputCloud(src);
+    pass_c.setFilterFieldName("z");
+    pass_c.setFilterLimits(-0.3, 0.3);
+    pass_c.setNegative(true);
+    pass_c.filter(*cloud_c);
+    return c;
 }
 
 /// Given a point cloud, returns a vector indicating the "up" direction of the ground plane.

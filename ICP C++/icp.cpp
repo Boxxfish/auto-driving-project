@@ -6,6 +6,7 @@
 #include <sstream>
 #include <cmath> // for radians conversion
 
+#include <pcl/filters/passthrough.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <pcl/registration/icp.h>
@@ -14,6 +15,8 @@
 typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 #include <Eigen/Geometry> // Include this for additional Eigen functionalities
+
+#include "visualizer.h"
 
 bool next_iteration = false;
 
@@ -26,153 +29,7 @@ struct Rotation {
 };
 
 
-int parseLine(const std::string& line, Location& loc, Rotation& rot) {
-  // std::cout << "in parse line" << std::endl;
-  // std::cout << line << std::endl;
 
-  std::istringstream iss(line);
-  std::string token;
-
-  int frame_num;
-  
-  // Get frame num
-  iss >> token;
-  frame_num = stoi(token);
-  // std::cout << frame_num << std::endl;
-
-  //ex token = "Transform(Location(x=-112.302399,"
-  iss >> token;
-  // std::cout << token << std::endl;
-  std::string delimiter_start = "=";
-  std::string delimiter_end = ",";
-  token = token.substr(token.find(delimiter_start)+1, token.find(delimiter_end)-token.find(delimiter_start));
-  loc.x = stod(token);
-  // std::cout << loc.x << std::endl;
-
-  //ex token = "y=2.822677,"
-  iss >> token;
-  // std::cout << token << std::endl;
-  delimiter_start = "=";
-  delimiter_end = ",";
-  token = token.substr(token.find(delimiter_start)+1, token.find(delimiter_end)-token.find(delimiter_start));
-  loc.y = stod(token);
-  // std::cout << loc.y << std::endl;
-
-  //ex token = "z=3.647835),"
-  iss >> token;
-  // std::cout << token << std::endl;
-  delimiter_start = "=";
-  delimiter_end = ")";
-  token = token.substr(token.find(delimiter_start)+1, token.find(delimiter_end)-token.find(delimiter_start));
-  loc.z = stod(token);
-  // std::cout << loc.z << std::endl;
-
-  //ex token = "Rotation(pitch=0.000000,"
-  iss >> token;
-  // std::cout << token << std::endl;
-  delimiter_start = "=";
-  delimiter_end = ",";
-  token = token.substr(token.find(delimiter_start)+1, token.find(delimiter_end)-token.find(delimiter_start));
-  rot.pitch = stod(token);
-  // std::cout << rot.pitch << std::endl;
-
-
-  //ex token = "yaw=-0.139465,"
-  iss >> token;
-  // std::cout << token << std::endl;
-  delimiter_start = "=";
-  delimiter_end = ",";
-  token = token.substr(token.find(delimiter_start)+1, token.find(delimiter_end)-token.find(delimiter_start));
-  rot.yaw = stod(token);
-  // std::cout << rot.yaw << std::endl;
-
-  //ex token = "roll=0.000000))"
-  iss >> token;
-  // std::cout << token << std::endl;
-  delimiter_start = "=";
-  delimiter_end = ")";
-  token = token.substr(token.find(delimiter_start)+1, token.find(delimiter_end)-token.find(delimiter_start));
-  rot.roll = stod(token);
-  // std::cout << rot.roll << std::endl;
-
-  return frame_num;
-}
-
-void generate_matrix(Eigen::Matrix4d& translation_matrix, const std::string& path, int data_num){
-  std::ifstream file(path);
-  std::string line;
-  std::cout << "in generate matrix" << std::endl;
-
-  while (std::getline(file, line)) {
-    // std::cout << "reading a new line" << std::endl;
-    Location loc;
-    Rotation rot;
-    int frame_num = parseLine(line, loc, rot);
-
-
-    if (frame_num-1 == data_num){
-      // // Convert rotation angles to radians
-      // rot.pitch = rot.pitch * M_PI / 180.0;
-      // rot.yaw = rot.yaw * M_PI / 180.0;
-      // rot.roll = rot.roll * M_PI / 180.0;
-
-      // Defining a rotation matrix and translation vector
-      // Calculate translation matrix
-      translation_matrix.block<3, 1>(0, 3) = Eigen::Vector3d(loc.x, loc.y, loc.z);
-      std::cout << "Translation Matrix: \n" << translation_matrix << std::endl;
-
-      // This is another way to get the rotation matrix, it is giving me the same result too
-
-      // Calculate rotation matrix
-      Eigen::AngleAxisd rollAngle(rot.roll, Eigen::Vector3d::UnitX());
-      std::cout << "Roll Matrix: \n" << rollAngle.matrix() <<std::endl;
-      Eigen::AngleAxisd yawAngle(rot.yaw, Eigen::Vector3d::UnitY());
-      std::cout << "Yaw Matrix: \n" <<  yawAngle.matrix() <<std::endl;
-
-      Eigen::AngleAxisd pitchAngle(rot.pitch, Eigen::Vector3d::UnitZ());
-      std::cout << "Pitch Matrix: \n" << pitchAngle.matrix() <<std::endl;
-
-      Eigen::Quaterniond quaternion = rollAngle * yawAngle * pitchAngle;
-      std::cout << "Quaternion: \n" << quaternion << std::endl;
-      Eigen::Matrix3d rotationMatrix = quaternion.toRotationMatrix();
-
-      // Calculate sin and cos of the angles
-      // double c1 = std::cos(rot.yaw);
-      // double c2 = std::cos(rot.pitch);
-      // double c3 = std::cos(rot.roll);
-      // double s1 = std::sin(rot.yaw);
-      // double s2 = std::sin(rot.pitch);
-      // double s3 = std::sin(rot.roll);
-
-      // // Create the rotation matrix
-      // Eigen::Matrix3d rotationMatrix;
-      // rotationMatrix << c1 * c2, c1 * s2 * s3 - s1 * c3, c1 * s2 * c3 + s1 * s3,
-      //                   s1 * c2, s1 * s2 * s3 + c1 * c3, s1 * s2 * c3 - c1 * s3,
-      //                   -s2, c2 * s3, c2 * c3;
-
-      // Eigen::Matrix3d rotationMatrix = rollAngle * yawAngle * pitchAngle;
-
-
-      std::cout << "Rotation Matrix: \n" << rotationMatrix << std::endl;
-
-      // combining the two matricies
-      translation_matrix (0, 0 ) = rotationMatrix (0, 0);
-      translation_matrix (0, 1 ) = rotationMatrix (0, 1);
-      translation_matrix (0, 2 ) = rotationMatrix (0, 2);
-      translation_matrix (1, 0 ) = rotationMatrix (1, 0);
-      translation_matrix (1, 1 ) = rotationMatrix (1, 1);
-      translation_matrix (1, 2 ) = rotationMatrix (1, 2);
-      translation_matrix (2, 0 ) = rotationMatrix (2, 0);
-      translation_matrix (2, 1 ) = rotationMatrix (2, 1);
-      translation_matrix (2, 2 ) = rotationMatrix (2, 2);
-      std::cout << "Final Transform Matrix: \n" << translation_matrix << std::endl;
-      return;
-    }
-
-  }
-
-  return;
-}
 
 void print4x4Matrix (const Eigen::Matrix4d & matrix)
 {
@@ -182,13 +39,6 @@ void print4x4Matrix (const Eigen::Matrix4d & matrix)
   printf ("    | %6.3f %6.3f %6.3f | \n", matrix (2, 0), matrix (2, 1), matrix (2, 2));
   printf ("Translation vector :\n");
   printf ("t = < %6.3f, %6.3f, %6.3f >\n\n", matrix (0, 3), matrix (1, 3), matrix (2, 3));
-}
-
-void keyboardEventOccurred (const pcl::visualization::KeyboardEvent& event, void*)
-{
-  std::cout << "Space Pressed\n";
-  if (event.getKeySym () == "space" && event.keyDown ())
-    next_iteration = true;
 }
 
 // Function to calculate and print RRE and RTE
@@ -213,7 +63,7 @@ void printRREandRTE(const Eigen::Matrix4d &current_transformation, const Eigen::
     std::cout << "RRE: " << RRE * (180.0 / M_PI) << " degrees" << std::endl; // Convert RRE from radians to degrees
 }
 
-// conatiles list of transofrm matricies organized frame 0 to end
+// contains a list of transofrm matricies organized frame 0 to end
 // Loads poses from a file.
 std::vector<Eigen::Matrix4d> load_poses(const std::string& path) {
   std::ifstream pose_file;
@@ -234,7 +84,7 @@ std::vector<Eigen::Matrix4d> load_poses(const std::string& path) {
       }
     }
     auto const pose = Eigen::Map<Eigen::Matrix<double, 4, 4>>(elems.data());
-    poses.push_back(pose);
+    poses.push_back(pose.transpose());
   }
   pose_file.close();
   return poses;
@@ -259,8 +109,8 @@ void add_noise_to_loc(Eigen::Matrix4d& pose, double stddev = 0.0) {
     std::default_random_engine generator;
     std::normal_distribution<double> dist(0.0, stddev);
     // Modify only x and z coords
-    pose(3,0) += dist(generator);
-    pose(3,2) += dist(generator);
+    pose(0,3) += dist(generator);
+    pose(1,3) += dist(generator);
   }
   return;
 }
@@ -321,15 +171,6 @@ int main (int argc, char* argv[])
     return (-1);
   }
   std::cout << "\nLoaded file " << infra_pcd << " (" << cloud_i->size () << " points) in " << time.toc () << " ms\n" << std::endl;
-  
-
-  // std::vector<Eigen::Matrix4d> poses_i = load_poses(std::string("../../pose.txt"));
-  // Eigen::Matrix4d c_transform_matrix = Eigen::Matrix4d::Identity();
-  // Eigen::Matrix4d i_transform_matrix = Eigen::Matrix4d::Identity();
-  // generate_matrix(c_transform_matrix, std::string("../../splits/pose_c.txt"),data_num);
-  // generate_matrix(i_transform_matrix, std::string("../../splits/pose_i.txt"),data_num);
-  // cout << "c transform matrix:\n" << c_transform_matrix << std::endl;
-  // cout << "i transform matrix:\n" << i_transform_matrix << std::endl;
 
   std::vector<Eigen::Matrix4d> poses_i = load_poses(std::string("../../splits/I_W.txt"));
   std::cout << "Loaded file " << "poses_i.txt" << " (" << poses_i.size() << " transforms)\n" << std::endl;
@@ -339,26 +180,42 @@ int main (int argc, char* argv[])
   std::cout << "Loaded file " << "poses_c.txt" << " (" << poses_c.size() << " transforms)\n" << std::endl;
   std::cout << poses_c[data_num] << std::endl;
   std::cout << "Adding noise" <<std::endl;
-  add_noise_to_loc(poses_c[data_num],5);
+  add_noise_to_loc(poses_c[data_num],3);
   std::cout << poses_c[data_num] << std::endl;
 
-  Eigen::Matrix4d temp = poses_i[0].transpose();
-  Eigen::Matrix4d temp2 = poses_c[0].transpose();
 
-  pcl::transformPointCloud (*cloud_i, *cloud_i, temp);
-  pcl::transformPointCloud (*cloud_c, *cloud_c, temp2);
-  *cloud_c_original = *cloud_c; //create two different car point clouds for comparison
+  pcl::transformPointCloud (*cloud_i, *cloud_i, poses_i[0]);
+  pcl::transformPointCloud (*cloud_c, *cloud_c, poses_c[data_num]);
+
+
+  pcl::PassThrough<pcl::PointXYZ> pass_c;
+  pass_c.setInputCloud(cloud_c);
+  pass_c.setFilterFieldName("z");
+  pass_c.setFilterLimits(-0.3,0.3);
+  pass_c.setNegative(true);
+  pass_c.filter(*cloud_c);
+
+
+  pcl::PassThrough<pcl::PointXYZ> pass_i;
+  pass_i.setInputCloud(cloud_i);
+  pass_i.setFilterFieldName("z");
+  pass_i.setFilterLimits(-0.3,0.3);
+  pass_i.setNegative(true);
+  pass_i.filter(*cloud_i);
+
+  *cloud_c_original = *cloud_c; //create two different car point clouds for comon
 
   std:cout << "ICP Starting\n";
 
-  // The Iterative Closest Point algorithm
+  //The Iterative Closest Point algorithm
   time.tic ();
   pcl::IterativeClosestPoint<PointT, PointT> icp;
   icp.setMaximumIterations (iterations);
+  icp.setMaxCorrespondenceDistance(3);
   icp.setInputSource (cloud_c); //cloud_c --> cloud_c
   icp.setInputTarget (cloud_i); //cloud_i --> i
   icp.align (*cloud_c);
-  icp.setMaximumIterations (1);  // We set this variable to 1 for the next time we will call .align () function
+
   std::cout << "Applied " << iterations << " ICP iteration(s) in " << time.toc () << " ms" << std::endl;
 
   if (icp.hasConverged ())
@@ -373,61 +230,28 @@ int main (int argc, char* argv[])
   }
 
 
-  // Visualization
-  pcl::visualization::PCLVisualizer viewer ("ICP demo");
-  // Create two vertically separated viewports
-  int v1 (0);
-  int v2 (1);
-  viewer.createViewPort (0.0, 0.0, 0.5, 1.0, v1);
-  viewer.createViewPort (0.5, 0.0, 1.0, 1.0, v2);
-
-  // The color we will be using
-  float bckgr_gray_level = 0.0;  // Black
-  float txt_gray_lvl = 1.0 - bckgr_gray_level;
-
-  // Original point cloud is white
-  pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_i_color_h (cloud_i, (int) 255 * txt_gray_lvl, (int) 255 * txt_gray_lvl,
-                                                                             (int) 255 * txt_gray_lvl);
-  viewer.addPointCloud (cloud_i, cloud_i_color_h, "cloud_i_v1", v1);
-  viewer.addPointCloud (cloud_i, cloud_i_color_h, "cloud_i_v2", v2);
-
-  // Transformed point cloud is green
-  pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_c_original_color_h (cloud_c_original, 20, 180, 20);
-  viewer.addPointCloud (cloud_c_original, cloud_c_original_color_h, "cloud_c_v1", v1);
-
-  // ICP aligned point cloud is red
-  pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_c_color_h (cloud_c, 180, 20, 20);
-  viewer.addPointCloud (cloud_c, cloud_c_color_h, "cloud_c_v2", v2);
-
-  // Adding text descriptions in each viewport
-  viewer.addText ("White: infrasturcture pc to align to\nGreen: car pc unaligned", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_1", v1);
-  viewer.addText ("White: infrasturcture pc to align to\nRed: car pc aligned", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_2", v2);
-
-  std::stringstream ss;
-  ss << iterations;
-  std::string iterations_cnt = "ICP iterations = " + ss.str ();
-  viewer.addText (iterations_cnt, 10, 60, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "iterations_cnt", v2);
-
-  // Set background color
-  viewer.setBackgroundColor (bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, v1);
-  viewer.setBackgroundColor (bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, v2);
-
-  // Set camera position and orientation
-  // viewer.setCameraPosition (-3.68332, 2.94092, 5.71266, 0.289847, 0.921947, -0.256907, 0);
-  viewer.addCoordinateSystem (20.0);
-  viewer.initCameraParameters ();
-  viewer.setCameraPosition (100, 100, 100, 0, 0, 0, 0);
-
-  int size = 3;
-  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, size,"cloud_i_v1");
-  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, size,"cloud_i_v2");
-  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, size,"cloud_c_v1");
-  viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, size,"cloud_c_v2");
 
 
-  viewer.setSize (2500, 1600);  // Visualiser window size
-  viewer.spin ();
+  // time.tic ();
+  // pcl::IterativeClosestPoint<PointT, PointT> icp;
+  // icp.setMaximumIterations (1);
+  // icp.setMaxCorrespondenceDistance(3);
+  // icp.setInputSource (cloud_c); //cloud_c --> cloud_c
+  // icp.setInputTarget (cloud_i); //cloud_i --> i
+  // int i;
+  // for (i=0; i < iterations; i++){
+  //   icp.align (*cloud_c);
+  //   std::cout << "ICP Iteration: " << i << "  ICP score is " << icp.getFitnessScore () << std::endl;
+  //   if (icp.getFitnessScore() < 0.5){
+  //     break;
+  //   }
+  // }
+  // std::cout << "Applied " << i << " ICP iteration(s) in " << time.toc () << " ms" << std::endl;
+  // std::cout << "\nICP has converged, score is " << icp.getFitnessScore () << std::endl;
+  // std::cout << "\nICP transformation " << iterations << " : cloud_c -> cloud_i" << std::endl;
 
+
+  create_visualizer(std::string("Demo Visualizer"), cloud_i, cloud_c_original, cloud_c);
 
   return (0);
 }

@@ -10,5 +10,6 @@ add_definitions(${PCL_DEFINITIONS})
 
 add_executable (icp icp.cpp)
 add_executable (compute_baselines compute_baselines.cpp)
+target_sources(icp PUBLIC visualizer.cpp)
 target_link_libraries (icp ${PCL_LIBRARIES})
 target_link_libraries (compute_baselines ${PCL_LIBRARIES})

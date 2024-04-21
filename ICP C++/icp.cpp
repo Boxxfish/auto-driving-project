@@ -41,13 +41,6 @@ void print4x4Matrix (const Eigen::Matrix4d & matrix)
   printf ("t = < %6.3f, %6.3f, %6.3f >\n\n", matrix (0, 3), matrix (1, 3), matrix (2, 3));
 }
 
-void keyboardEventOccurred (const pcl::visualization::KeyboardEvent& event, void*)
-{
-  std::cout << "Space Pressed\n";
-  if (event.getKeySym () == "space" && event.keyDown ())
-    next_iteration = true;
-}
-
 // Function to calculate and print RRE and RTE
 void printRREandRTE(const Eigen::Matrix4d &current_transformation, const Eigen::Matrix4d &ground_truth_transformation) {
     // Extract rotation matrices
@@ -70,7 +63,7 @@ void printRREandRTE(const Eigen::Matrix4d &current_transformation, const Eigen::
     std::cout << "RRE: " << RRE * (180.0 / M_PI) << " degrees" << std::endl; // Convert RRE from radians to degrees
 }
 
-// conatiles list of transofrm matricies organized frame 0 to end
+// contains a list of transofrm matricies organized frame 0 to end
 // Loads poses from a file.
 std::vector<Eigen::Matrix4d> load_poses(const std::string& path) {
   std::ifstream pose_file;

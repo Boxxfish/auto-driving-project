@@ -82,9 +82,9 @@ auto get_noisy_guess(const Eigen::Matrix4d &pose, double stddev = 0.0) -> Eigen:
   {
     std::default_random_engine generator;
     std::normal_distribution<double> dist(0.0, stddev);
-    // Modify only x and z coords
+    // Modify only x and y coords
     loc(0) += dist(generator);
-    loc(2) += dist(generator);
+    loc(1) += dist(generator);
   }
   Eigen::Matrix4d new_pose;
   new_pose << 1.0, 0.0, 0.0, loc(0),

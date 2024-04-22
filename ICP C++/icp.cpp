@@ -17,6 +17,8 @@ typedef pcl::PointCloud<PointT> PointCloudT;
 #include <Eigen/Geometry> // Include this for additional Eigen functionalities
 
 #include "visualizer.h"
+#include "dataset.h"
+#include "frame.h"
 
 bool next_iteration = false;
 
@@ -27,9 +29,6 @@ struct Location {
 struct Rotation {
     double pitch, yaw, roll;
 };
-
-
-
 
 void print4x4Matrix (const Eigen::Matrix4d & matrix)
 {
@@ -123,12 +122,15 @@ int main (int argc, char* argv[])
 
 
 
-  // The point clouds we will be using
-  PointCloudT::Ptr cloud_i (new PointCloudT);  // infrastructure point cloud <-- we are trying to align to this
-  PointCloudT::Ptr cloud_c_original (new PointCloudT);  // original car point cloud
-  PointCloudT::Ptr cloud_c (new PointCloudT);  // aligned car point cloud
 
-  Eigen::Matrix4d cumulative_transformation = Eigen::Matrix4d::Identity(); // Initialize cumulative transformation
+
+
+  // // The point clouds we will be using
+  // PointCloudT::Ptr cloud_i (new PointCloudT);  // infrastructure point cloud <-- we are trying to align to this
+  // PointCloudT::Ptr cloud_c_original (new PointCloudT);  // original car point cloud
+  // PointCloudT::Ptr cloud_c (new PointCloudT);  // aligned car point cloud
+
+  // Eigen::Matrix4d cumulative_transformation = Eigen::Matrix4d::Identity(); // Initialize cumulative transformation
 
   // Checking program arguments
   if (argc < 3)
@@ -139,95 +141,107 @@ int main (int argc, char* argv[])
     return (-1);
   }
 
-  std::string car_pcd = std::string("../../splits/") + argv[1] + std::string("_v.pcd");
-  std::string infra_pcd = std::string("../../splits/") + argv[1] + std::string("_i.pcd");
+  // std::string car_pcd = std::string("../../splits/") + argv[1] + std::string("_v.pcd");
+  // std::string infra_pcd = std::string("../../splits/") + argv[1] + std::string("_i.pcd");
   int data_num = atoi(argv[1]);
 
-  int iterations = 1;  // Default number of ICP iterations
+  std::string path = "../../data/Dataset_1/D1/";
+  Dataset dataset1_d1(path);
+  std::cout << "Dataset Object Created." << std::endl;
+  std::cout << "Infrastructure Pose:\n" << dataset1_d1.i_pose <<std::endl;
+  std::cout << "Car Pose:\n" << dataset1_d1.c_poses[data_num] << std::endl;
 
-  // If the user passed the number of iteration as an argument
-  iterations = atoi (argv[2]);
-  std::cout << iterations;
-  if (iterations < 1)
-  {
-    PCL_ERROR ("Number of initial iterations must be >= 1\n");
-    return (-1);
-  }
+  std::cout << "Loading Frame" << std::endl;
+  Frame frame = dataset1_d1.getFrame(data_num);
+  std::cout << "Frame Loaded" << std::endl;
+  create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, frame.cloud_c);
+
+  return 0;
+
+  // int iterations = 1;  // Default number of ICP iterations
+
+  // // If the user passed the number of iteration as an argument
+  // iterations = atoi (argv[2]);
+  // std::cout << iterations;
+  // if (iterations < 1)
+  // {
+  //   PCL_ERROR ("Number of initial iterations must be >= 1\n");
+  //   return (-1);
+  // }
   
+  // pcl::console::TicToc time;
+  // time.tic ();
+  // if (pcl::io::loadPCDFile (car_pcd, *cloud_c) < 0)
+  // {
+  //   PCL_ERROR ("Error loading cloud %s.\n", argv[1]);
+  //   return (-1);
+  // }
+  // std::cout << "\nLoaded file " << car_pcd << " (" << cloud_c->size () << " points) in " << time.toc () << " ms\n" << std::endl;
 
-  pcl::console::TicToc time;
-  time.tic ();
-  if (pcl::io::loadPCDFile (car_pcd, *cloud_c) < 0)
-  {
-    PCL_ERROR ("Error loading cloud %s.\n", argv[1]);
-    return (-1);
-  }
-  std::cout << "\nLoaded file " << car_pcd << " (" << cloud_c->size () << " points) in " << time.toc () << " ms\n" << std::endl;
+  // time.tic ();
+  // if (pcl::io::loadPCDFile (infra_pcd, *cloud_i) < 0)
+  // {
+  //   PCL_ERROR ("Error loading cloud %s.\n", argv[1]);
+  //   return (-1);
+  // }
+  // std::cout << "\nLoaded file " << infra_pcd << " (" << cloud_i->size () << " points) in " << time.toc () << " ms\n" << std::endl;
 
-  time.tic ();
-  if (pcl::io::loadPCDFile (infra_pcd, *cloud_i) < 0)
-  {
-    PCL_ERROR ("Error loading cloud %s.\n", argv[1]);
-    return (-1);
-  }
-  std::cout << "\nLoaded file " << infra_pcd << " (" << cloud_i->size () << " points) in " << time.toc () << " ms\n" << std::endl;
+  // std::vector<Eigen::Matrix4d> poses_i = load_poses(std::string("../../splits/I_W.txt"));
+  // std::cout << "Loaded file " << "poses_i.txt" << " (" << poses_i.size() << " transforms)\n" << std::endl;
+  // std::cout << poses_i[0] << std::endl;
 
-  std::vector<Eigen::Matrix4d> poses_i = load_poses(std::string("../../splits/I_W.txt"));
-  std::cout << "Loaded file " << "poses_i.txt" << " (" << poses_i.size() << " transforms)\n" << std::endl;
-  std::cout << poses_i[0] << std::endl;
-
-  std::vector<Eigen::Matrix4d> poses_c = load_poses(std::string("../../splits/V_W.txt"));
-  std::cout << "Loaded file " << "poses_c.txt" << " (" << poses_c.size() << " transforms)\n" << std::endl;
-  std::cout << poses_c[data_num] << std::endl;
-  std::cout << "Adding noise" <<std::endl;
-  add_noise_to_loc(poses_c[data_num],3);
-  std::cout << poses_c[data_num] << std::endl;
-
-
-  pcl::transformPointCloud (*cloud_i, *cloud_i, poses_i[0]);
-  pcl::transformPointCloud (*cloud_c, *cloud_c, poses_c[data_num]);
+  // std::vector<Eigen::Matrix4d> poses_c = load_poses(std::string("../../splits/V_W.txt"));
+  // std::cout << "Loaded file " << "poses_c.txt" << " (" << poses_c.size() << " transforms)\n" << std::endl;
+  // std::cout << poses_c[data_num] << std::endl;
+  // std::cout << "Adding noise" <<std::endl;
+  // add_noise_to_loc(poses_c[data_num],3);
+  // std::cout << poses_c[data_num] << std::endl;
 
 
-  pcl::PassThrough<pcl::PointXYZ> pass_c;
-  pass_c.setInputCloud(cloud_c);
-  pass_c.setFilterFieldName("z");
-  pass_c.setFilterLimits(-0.3,0.3);
-  pass_c.setNegative(true);
-  pass_c.filter(*cloud_c);
+  // pcl::transformPointCloud (*cloud_i, *cloud_i, poses_i[0]);
+  // pcl::transformPointCloud (*cloud_c, *cloud_c, poses_c[data_num]);
 
 
-  pcl::PassThrough<pcl::PointXYZ> pass_i;
-  pass_i.setInputCloud(cloud_i);
-  pass_i.setFilterFieldName("z");
-  pass_i.setFilterLimits(-0.3,0.3);
-  pass_i.setNegative(true);
-  pass_i.filter(*cloud_i);
+  // pcl::PassThrough<pcl::PointXYZ> pass_c;
+  // pass_c.setInputCloud(cloud_c);
+  // pass_c.setFilterFieldName("z");
+  // pass_c.setFilterLimits(-0.3,0.3);
+  // pass_c.setNegative(true);
+  // pass_c.filter(*cloud_c);
 
-  *cloud_c_original = *cloud_c; //create two different car point clouds for comon
 
-  std:cout << "ICP Starting\n";
+  // pcl::PassThrough<pcl::PointXYZ> pass_i;
+  // pass_i.setInputCloud(cloud_i);
+  // pass_i.setFilterFieldName("z");
+  // pass_i.setFilterLimits(-0.3,0.3);
+  // pass_i.setNegative(true);
+  // pass_i.filter(*cloud_i);
 
-  //The Iterative Closest Point algorithm
-  time.tic ();
-  pcl::IterativeClosestPoint<PointT, PointT> icp;
-  icp.setMaximumIterations (iterations);
-  icp.setMaxCorrespondenceDistance(3);
-  icp.setInputSource (cloud_c); //cloud_c --> cloud_c
-  icp.setInputTarget (cloud_i); //cloud_i --> i
-  icp.align (*cloud_c);
+  // *cloud_c_original = *cloud_c; //create two different car point clouds for comon
 
-  std::cout << "Applied " << iterations << " ICP iteration(s) in " << time.toc () << " ms" << std::endl;
+  // std:cout << "ICP Starting\n";
 
-  if (icp.hasConverged ())
-  {
-    std::cout << "\nICP has converged, score is " << icp.getFitnessScore () << std::endl;
-    std::cout << "\nICP transformation " << iterations << " : cloud_c -> cloud_i" << std::endl;
-  }
-  else
-  {
-    PCL_ERROR ("\nICP has not converged.\n");
-    return (-1);
-  }
+  // //The Iterative Closest Point algorithm
+  // time.tic ();
+  // pcl::IterativeClosestPoint<PointT, PointT> icp;
+  // icp.setMaximumIterations (iterations);
+  // icp.setMaxCorrespondenceDistance(3);
+  // icp.setInputSource (cloud_c); //cloud_c --> cloud_c
+  // icp.setInputTarget (cloud_i); //cloud_i --> i
+  // icp.align (*cloud_c);
+
+  // std::cout << "Applied " << iterations << " ICP iteration(s) in " << time.toc () << " ms" << std::endl;
+
+  // if (icp.hasConverged ())
+  // {
+  //   std::cout << "\nICP has converged, score is " << icp.getFitnessScore () << std::endl;
+  //   std::cout << "\nICP transformation " << iterations << " : cloud_c -> cloud_i" << std::endl;
+  // }
+  // else
+  // {
+  //   PCL_ERROR ("\nICP has not converged.\n");
+  //   return (-1);
+  // }
 
 
 
@@ -251,7 +265,7 @@ int main (int argc, char* argv[])
   // std::cout << "\nICP transformation " << iterations << " : cloud_c -> cloud_i" << std::endl;
 
 
-  create_visualizer(std::string("Demo Visualizer"), cloud_i, cloud_c_original, cloud_c);
+  // create_visualizer(std::string("Demo Visualizer"), cloud_i, cloud_c_original, cloud_c);
 
-  return (0);
+  // return (0);
 }

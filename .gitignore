@@ -3,7 +3,7 @@
 
 CMakeFiles/
 CMakeCache.txt
-
+/carla_data
 /data
 /temp
 /splits

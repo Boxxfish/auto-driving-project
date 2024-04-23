@@ -15,32 +15,12 @@
 #include <pcl/console/time.h> // TicToc
 typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
-#include <Eigen/Geometry> // Include this for additional Eigen functionalities
+#include <Eigen/Geometry>
 #include "json.hpp"
+#include "metrics.h"
 using json = nlohmann::json;
 
 #define let auto const
-
-// Function to calculate and return RRE (degrees) and RTE (meters).
-auto compute_rre_rte(const Eigen::Matrix4d &current_transformation, const Eigen::Matrix4d &ground_truth_transformation) -> std::tuple<double, double>
-{
-  // Extract rotation matrices
-  Eigen::Matrix3d R_current = current_transformation.block<3, 3>(0, 0);
-  Eigen::Matrix3d R_ground_truth = ground_truth_transformation.block<3, 3>(0, 0);
-
-  // Extract translation vectors
-  Eigen::Vector3d t_current = current_transformation.block<3, 1>(0, 3);
-  Eigen::Vector3d t_ground_truth = ground_truth_transformation.block<3, 1>(0, 3);
-
-  // Calculate RTE as Euclidean distance between the two translation vectors
-  double RTE = (t_current - t_ground_truth).norm();
-
-  // Calculate RRE as the angle between the two rotation matrices
-  Eigen::Quaterniond q_current(R_current), q_ground_truth(R_ground_truth);
-  double RRE = q_current.angularDistance(q_ground_truth) * (180.0 / M_PI);
-
-  return {RRE, RTE};
-}
 
 // Contains list of transform matrices organized frame 0 to end.
 // Loads poses from a file.
@@ -179,7 +159,8 @@ auto main(int argc, char *argv[]) -> int
         {
           let new_car_pose = Eigen::Matrix4d(icp.getFinalTransformation().cast<double>());
 
-          let[rre, rte] = compute_rre_rte(new_car_pose, v_poses[i].transpose());
+          let rre = compute_rre(new_car_pose, v_poses[i].transpose());
+          let rte = compute_rte(new_car_pose, v_poses[i].transpose());
           if (std::find(easy_idxs.begin(), easy_idxs.end(), i) != easy_idxs.end())
           {
             easy_total_rte += rte;

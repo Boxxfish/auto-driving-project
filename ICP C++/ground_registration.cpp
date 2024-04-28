@@ -81,7 +81,7 @@ void generateTransformedPCD(const pcl::PointCloud<pcl::PointXYZ>::Ptr& vehicleCl
     std::cout << "Saved combined cloud." << std::endl;
 }
 
-int main(int argc, char** argv) {
+int test_ground_registration() {
     pcl::PointCloud<pcl::PointXYZ>::Ptr vehicleCloud(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::PointCloud<pcl::PointXYZ>::Ptr infraCloud(new pcl::PointCloud<pcl::PointXYZ>());
 

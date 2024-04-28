@@ -1,3 +1,6 @@
+#ifndef PIPELINE_H_
+#define PIPELINE_H_
+
 #include <Eigen/Geometry>
 #include <pcl/point_types.h>
 #include <pcl/registration/icp.h>
@@ -64,3 +67,5 @@ auto ground_plane(PointCloudT::Ptr src) -> Eigen::Vector3d
 {
     return Eigen::Vector3d();
 }
+
+#endif

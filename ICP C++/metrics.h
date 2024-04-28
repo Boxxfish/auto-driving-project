@@ -1,3 +1,6 @@
+#ifndef METRICS_H_
+#define METRICS_H_
+
 #include <Eigen/Geometry>
 
 // Function to calculate and return RRE (degrees).
@@ -25,3 +28,5 @@ auto compute_rte(const Eigen::Matrix4d &current_transformation, const Eigen::Mat
     double RTE = (t_current - t_ground_truth).norm();
     return RTE;
 }
+
+#endif

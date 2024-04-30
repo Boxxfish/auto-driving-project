@@ -6,7 +6,7 @@
 #include <optional>
 #include "pipeline.h"
 #include <pcl/filters/passthrough.h>
-
+#include "ground_registration.h"
 
 
 
@@ -14,17 +14,25 @@
 /// Aligns 2 axes with the ground plane, then applies ground removal and performs ICP alignment.
 /// Prior guesses are used as a starting point for future guesses.
 
-Eigen::Matrix4d StdPipeline::guess_v_pose(const Frame frame)
+Eigen::Matrix4d StdPipeline::guess_v_pose(Frame frame)
 {
     // TODO: Set up the pipeline here.
+
+    //fix infrastructure point cloud
+    PointCloudT::Ptr cloud_c_new (new PointCloudT); 
+    pcl::transformPointCloud (*frame.cloud_i, *frame.cloud_i, frame.pose_i);
     //add noise
     Eigen::Matrix4d pose = add_noise_xyz(frame.pose_c, 3);
     //ground align
+    std::pair<Eigen::Vector3f, Eigen::Vector3f> planes = ground_plane(frame.cloud_c);
+    std::cout << "Unit Normal Vector: \n" << planes.first << std::endl;
+    std::cout << "Unit Direction Vector: \n" << planes.second << std::endl;
+
     //ground removal
 
     //icp
     std::cout << "end of pipeline" << std::endl;
-    return Eigen::Matrix4d();
+    return pose;
 }
 
 Eigen::Matrix4d Pipeline::add_noise_xyz(const Eigen::Matrix4d& src,double stddev){
@@ -37,11 +45,19 @@ Eigen::Matrix4d Pipeline::add_noise_xyz(const Eigen::Matrix4d& src,double stddev
         double y = dist(generator);
         double z = dist(generator);
 
+        std::cout << "x:  \n"<< x << std::endl;
+        std::cout << "y:  \n"<< y << std::endl;
+        std::cout << "z:  \n"<< z << std::endl;
+
         Eigen::Matrix4d new_pose;
         new_pose = src;
+        std::cout << "new pose:  \n"<< new_pose << std::endl;
+
         new_pose(0,3) += x;
-        new_pose(0,3) += y;
-        new_pose(0,3) += z;
+        new_pose(1,3) += y;
+        new_pose(2,3) += z;
+        std::cout << "new pose:  \n"<< new_pose << std::endl;
+
 
         return new_pose;
 }
@@ -103,8 +119,9 @@ PointCloudT::Ptr Pipeline::remove_ground(PointCloudT::Ptr src)
 }
 
 /// Given a point cloud, returns a vector indicating the "up" direction of the ground plane.
-Eigen::Vector3d Pipeline::ground_plane(PointCloudT::Ptr src)
+std::pair<Eigen::Vector3f, Eigen::Vector3f> Pipeline::ground_plane(PointCloudT::Ptr src)
 {
-    return Eigen::Vector3d();
+    
+    return getVectors(src);
 }
 

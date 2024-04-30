@@ -26,7 +26,7 @@ class Pipeline
         PointCloudT::Ptr remove_ground(PointCloudT::Ptr src);
 
         /// Given a point cloud, returns a vector indicating the "up" direction of the ground plane.
-        Eigen::Vector3d ground_plane(PointCloudT::Ptr src);
+        std::pair<Eigen::Vector3f, Eigen::Vector3f> ground_plane(PointCloudT::Ptr src);
 
         Eigen::Matrix4d add_noise_xyz(const Eigen::Matrix4d &src,double stddev);
         Eigen::Matrix4d add_noise_rot(const Eigen::Matrix4d &src,double stddev);

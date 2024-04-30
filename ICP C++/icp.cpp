@@ -154,6 +154,10 @@ int main (int argc, char* argv[])
   std::cout << "Loading Frame" << std::endl;
   Frame frame = dataset1_d1.getFrame(data_num);
   std::cout << "Frame Loaded" << std::endl;
+  // frame.pose_i = frame.pose_i.transpose();
+  pcl::transformPointCloud (*frame.cloud_i, *frame.cloud_i, frame.pose_i);
+  pcl::transformPointCloud (*frame.cloud_c, *frame.cloud_c, frame.pose_c);
+
   create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, frame.cloud_c);
 
   return 0;

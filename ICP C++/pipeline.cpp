@@ -34,18 +34,18 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(Frame &frame)
     frame.cloud_c = get<2>(vectors);
     create_visualizer(std::string("ground reg Visualizer"), frame.cloud_c, frame.cloud_c, frame.cloud_c); 
 
-    // Eigen::Matrix3d rot = create_rot_matrix(vectors);
-    // pose(0,0) = rot(0,0);
-    // pose(0,1) = rot(0,1);
-    // pose(0,2) = rot(0,2);
+    Eigen::Matrix3d rot = create_rot_matrix(get<0>(vectors),get<1>(vectors));
+    pose(0,0) = rot(0,0);
+    pose(0,1) = rot(0,1);
+    pose(0,2) = rot(0,2);
 
-    // pose(1,0) = rot(1,0);
-    // pose(1,1) = rot(1,1);
-    // pose(1,2) = rot(1,2);
+    pose(1,0) = rot(1,0);
+    pose(1,1) = rot(1,1);
+    pose(1,2) = rot(1,2);
 
-    // pose(2,0) = rot(2,0);
-    // pose(2,1) = rot(2,1);
-    // pose(2,2) = rot(2,2);
+    pose(2,0) = rot(2,0);
+    pose(2,1) = rot(2,1);
+    pose(2,2) = rot(2,2);
 
     std::cout << "Rotation Guess Added: \n" << pose << std::endl;
 
@@ -143,10 +143,8 @@ PointCloudT::Ptr Pipeline::remove_ground_basic(PointCloudT::Ptr src)
 // }
 
 /// Given a point cloud, returns a vector indicating the "up" direction of the ground plane.
-Eigen::Matrix3d Pipeline::create_rot_matrix(std::pair<Eigen::Vector3f, Eigen::Vector3f> vectors)
+Eigen::Matrix3d Pipeline::create_rot_matrix(Eigen::Vector3f z, Eigen::Vector3f y)
 {
-    Eigen::Vector3f z = vectors.first;
-    Eigen::Vector3f y = vectors.second;
     std::cout << "Unit Normal Vector: \n" << z << std::endl;
     std::cout << "Unit Direction Vector: \n" << y << std::endl;
 

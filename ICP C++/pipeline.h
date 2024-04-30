@@ -26,7 +26,7 @@ class Pipeline
         PointCloudT::Ptr remove_ground_basic(PointCloudT::Ptr src);
 
         /// create rotation matrix given vectors from gound plane analysis
-        Eigen::Matrix3d create_rot_matrix(std::pair<Eigen::Vector3f, Eigen::Vector3f> vectors);
+        Eigen::Matrix3d create_rot_matrix(Eigen::Vector3f z, Eigen::Vector3f y);
 
         Eigen::Matrix4d add_noise_xyz(const Eigen::Matrix4d &src,double stddev);
 

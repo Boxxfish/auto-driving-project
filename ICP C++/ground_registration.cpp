@@ -47,9 +47,6 @@ std::tuple<Eigen::Vector3f, Eigen::Vector3f,pcl::PointCloud<pcl::PointXYZ>::Ptr>
         extract.setNegative(true); // Extract non-plane points
         extract.filter(*filtered_cloud);
     }
-    create_visualizer(std::string("ground reg Visualizer"), filtered_cloud, filtered_cloud, filtered_cloud); 
-
-
 
     Eigen::Vector3f unit_normal_vector(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
     unit_normal_vector.normalize();

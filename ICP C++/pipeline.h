@@ -20,7 +20,7 @@ class Frame;
 class Pipeline
 {
     protected:
-        std::optional<Eigen::Matrix4d> align_icp(PointCloudT::Ptr src, PointCloudT::Ptr target, int iters);
+        Eigen::Matrix4d align_icp(PointCloudT::Ptr src, PointCloudT::Ptr target, int iters);
 
         /// Given a point cloud, returns a new point cloud with ground points removed.
         PointCloudT::Ptr remove_ground_basic(PointCloudT::Ptr src);
@@ -29,6 +29,8 @@ class Pipeline
         Eigen::Matrix3d create_rot_matrix(Eigen::Vector3f z, Eigen::Vector3f y);
 
         Eigen::Matrix4d add_noise_xyz(const Eigen::Matrix4d &src,double stddev);
+
+        Eigen::Matrix4d location_interpolation(Frame &f1, Eigen::Matrix4d translation, Frame &fn);
 
     public:
         /// Given a frame, returns where it thinks the vehicle is.
@@ -47,6 +49,13 @@ class StdPipeline : public Pipeline
         Eigen::Matrix4d guess_v_pose(Frame &frame);
 };
 
+// only uses icp, uses ground truth rotation in initial guess
+// still does ground removal
+class SimplePipeline : public Pipeline
+{
+    public:
+        Eigen::Matrix4d guess_v_pose(Frame &frame);
+};
 
 
 #endif

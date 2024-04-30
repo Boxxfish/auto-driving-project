@@ -26,40 +26,92 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(Frame &frame)
     frame.cloud_i = remove_ground_basic(frame.cloud_i);
 
     //add noise
+    // Eigen::Matrix4d pose;
+    // pose(3,3) = 1;
     Eigen::Matrix4d pose = add_noise_xyz(frame.pose_c, 3);
-    std::cout << "Noise Added: \n" << pose << std::endl;
+    // std::cout << "Noise Added: \n" << pose << std::endl;
+    pcl::transformPointCloud (*frame.cloud_c, *frame.cloud_c, pose);
+
     //ground align
     bool remove_ground=true;
+    //gets vectors and removes ground from car point cloud
     std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(frame.cloud_c, remove_ground);
     frame.cloud_c = get<2>(vectors);
-    create_visualizer(std::string("ground reg Visualizer"), frame.cloud_c, frame.cloud_c, frame.cloud_c); 
-
-    Eigen::Matrix3d rot = create_rot_matrix(get<0>(vectors),get<1>(vectors));
-    pose(0,0) = rot(0,0);
-    pose(0,1) = rot(0,1);
-    pose(0,2) = rot(0,2);
-
-    pose(1,0) = rot(1,0);
-    pose(1,1) = rot(1,1);
-    pose(1,2) = rot(1,2);
-
-    pose(2,0) = rot(2,0);
-    pose(2,1) = rot(2,1);
-    pose(2,2) = rot(2,2);
-
-    std::cout << "Rotation Guess Added: \n" << pose << std::endl;
 
 
-    //ground removal
+    // std::cout << "pose i: \n" << frame.pose_i << std::endl;
+    // std::cout << "pose c: \n" << pose << std::endl;
+
+
+    // Eigen::Vector3f diff;
+    // diff(0) =  ((float)frame.pose_i(0,3) - (float)pose(0,3));
+    // diff(1) = ((float)frame.pose_i(1,3) - (float)pose(1,3));
+    // diff(2) = 0;
+    // std::cout << "diff: \n" << diff << std::endl;
+    
+    // diff.normalize();
+    // std::cout << "diff: \n" << diff << std::endl;
+
+
+
+
+    // Eigen::Matrix3d rot = create_rot_matrix(diff,get<1>(vectors));
+    // pose(0,0) = rot(0,0);
+    // pose(0,1) = rot(0,1);
+    // pose(0,2) = rot(0,2);
+
+    // pose(1,0) = rot(1,0);
+    // pose(1,1) = rot(1,1);
+    // pose(1,2) = rot(1,2);
+
+    // pose(2,0) = rot(2,0);
+    // pose(2,1) = rot(2,1);
+    // pose(2,2) = rot(2,2);
+
+    // std::cout << "Rotation Guess Added: \n" << pose << std::endl;
 
     //icp
-    std::cout << "end of pipeline" << std::endl;
-    return pose;
+    Eigen::Matrix4d icp_pose = Pipeline::align_icp(frame.cloud_c, frame.cloud_i, 150); 
+
+    // std::cout << "end of pipeline" << std::endl;
+    return icp_pose;
+}
+
+Eigen::Matrix4d SimplePipeline::guess_v_pose(Frame &frame)
+{
+
+    //fix infrastructure point cloud
+    PointCloudT::Ptr cloud_c_new (new PointCloudT); 
+    pcl::transformPointCloud (*frame.cloud_i, *frame.cloud_i, frame.pose_i);
+    frame.cloud_i = remove_ground_basic(frame.cloud_i);
+
+    //add noise
+    // Eigen::Matrix4d pose;
+    // pose(3,3) = 1;
+    Eigen::Matrix4d pose = add_noise_xyz(frame.pose_c, 3);
+    // std::cout << "Noise Added: \n" << pose << std::endl;
+    pcl::transformPointCloud (*frame.cloud_c, *frame.cloud_c, pose);
+
+    //ground align
+    bool remove_ground=true;
+    //gets vectors and removes ground from car point cloud
+    std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(frame.cloud_c, remove_ground);
+    frame.cloud_c = get<2>(vectors);
+
+    //icp
+    Eigen::Matrix4d icp_pose = Pipeline::align_icp(frame.cloud_c, frame.cloud_i, 150); 
+
+    // std::cout << "end of pipeline" << std::endl;
+    return icp_pose;
+}
+
+Eigen::Matrix4d location_interpolation(Frame &f1, Eigen::Matrix4d translation, Frame &fn){
+    return Eigen::Matrix4d;
 }
 
 Eigen::Matrix4d Pipeline::add_noise_xyz(const Eigen::Matrix4d& src,double stddev){
 
-        std::cout << "add noise " << std::endl;
+        // std::cout << "add noise " << std::endl;
         std::default_random_engine generator;
         std::normal_distribution<double> dist(0.0, stddev);
         // Modify only x and y coords
@@ -67,19 +119,18 @@ Eigen::Matrix4d Pipeline::add_noise_xyz(const Eigen::Matrix4d& src,double stddev
         double y = dist(generator);
         double z = dist(generator);
 
-        std::cout << "x:  \n"<< x << std::endl;
-        std::cout << "y:  \n"<< y << std::endl;
-        std::cout << "z:  \n"<< z << std::endl;
+        // std::cout << "x:  \n"<< x << std::endl;
+        // std::cout << "y:  \n"<< y << std::endl;
+        // std::cout << "z:  \n"<< z << std::endl;
 
         Eigen::Matrix4d new_pose;
         new_pose = src;
-        std::cout << "new pose:  \n"<< new_pose << std::endl;
+        // std::cout << "new pose:  \n"<< new_pose << std::endl;
 
         new_pose(0,3) += x;
         new_pose(1,3) += y;
         new_pose(2,3) += z;
-        std::cout << "new pose:  \n"<< new_pose << std::endl;
-
+        // std::cout << "new pose:  \n"<< new_pose << std::endl;
 
         return new_pose;
 }
@@ -89,7 +140,7 @@ Eigen::Matrix4d Pipeline::add_noise_xyz(const Eigen::Matrix4d& src,double stddev
 
 /// Given a source and target point cloud, returns a matrix that aligns the source to the target.
 /// If alignment has failed, returns nullopt.
-std::optional<Eigen::Matrix4d> Pipeline::align_icp(PointCloudT::Ptr src, PointCloudT::Ptr target, int iters) 
+Eigen::Matrix4d Pipeline::align_icp(PointCloudT::Ptr src, PointCloudT::Ptr target, int iters) 
 {
     pcl::IterativeClosestPoint<PointT, PointT> icp;
     icp.setMaximumIterations(iters);
@@ -97,7 +148,7 @@ std::optional<Eigen::Matrix4d> Pipeline::align_icp(PointCloudT::Ptr src, PointCl
     icp.setInputSource(src);
     PointCloudT::Ptr cloud_final(new PointCloudT);
     icp.align(*cloud_final);
-    return icp.hasConverged() ? std::optional{Eigen::Matrix4d(icp.getFinalTransformation().cast<double>())} : std::nullopt;
+    return Eigen::Matrix4d(icp.getFinalTransformation().cast<double>());
 }
 
 /// Given a point cloud, returns a new point cloud with ground points removed.
@@ -145,8 +196,8 @@ PointCloudT::Ptr Pipeline::remove_ground_basic(PointCloudT::Ptr src)
 /// Given a point cloud, returns a vector indicating the "up" direction of the ground plane.
 Eigen::Matrix3d Pipeline::create_rot_matrix(Eigen::Vector3f z, Eigen::Vector3f y)
 {
-    std::cout << "Unit Normal Vector: \n" << z << std::endl;
-    std::cout << "Unit Direction Vector: \n" << y << std::endl;
+    // std::cout << "z: \n" << z << std::endl;
+    // std::cout << "y: \n" << y << std::endl;
 
     Eigen::Vector3f x = z.cross(y);
 

@@ -21,13 +21,26 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(Frame frame)
     //fix infrastructure point cloud
     PointCloudT::Ptr cloud_c_new (new PointCloudT); 
     pcl::transformPointCloud (*frame.cloud_i, *frame.cloud_i, frame.pose_i);
-    
+
     //add noise
     Eigen::Matrix4d pose = add_noise_xyz(frame.pose_c, 3);
+    std::cout << "Noise Added: \n" << pose << std::endl;
     //ground align
-    std::pair<Eigen::Vector3f, Eigen::Vector3f> planes = ground_plane(frame.cloud_c);
-    std::cout << "Unit Normal Vector: \n" << planes.first << std::endl;
-    std::cout << "Unit Direction Vector: \n" << planes.second << std::endl;
+    Eigen::Matrix3d rot = ground_plane(frame.cloud_c);
+    pose(0,0) = rot(0,0);
+    pose(0,1) = rot(0,1);
+    pose(0,2) = rot(0,2);
+
+    pose(1,0) = rot(1,0);
+    pose(1,1) = rot(1,1);
+    pose(1,2) = rot(1,2);
+
+    pose(2,0) = rot(2,0);
+    pose(2,1) = rot(2,1);
+    pose(2,2) = rot(2,2);
+
+    std::cout << "Rotation Guess Added: \n" << pose << std::endl;
+
 
     //ground removal
 
@@ -120,9 +133,21 @@ PointCloudT::Ptr Pipeline::remove_ground(PointCloudT::Ptr src)
 }
 
 /// Given a point cloud, returns a vector indicating the "up" direction of the ground plane.
-std::pair<Eigen::Vector3f, Eigen::Vector3f> Pipeline::ground_plane(PointCloudT::Ptr src)
+Eigen::Matrix3d Pipeline::ground_plane(PointCloudT::Ptr src)
 {
-    
-    return getVectors(src);
+    std::pair<Eigen::Vector3f, Eigen::Vector3f> vectors = getVectors(src);
+    Eigen::Vector3f z = vectors.first;
+    Eigen::Vector3f y = vectors.second;
+    std::cout << "Unit Normal Vector: \n" << z << std::endl;
+    std::cout << "Unit Direction Vector: \n" << y << std::endl;
+
+    Eigen::Vector3f x = z.cross(y);
+
+    Eigen::Matrix3d rot;
+    rot << x.dot(x), y.dot(x), z.dot(x),
+    x.dot(y), y.dot(y), z.dot(y), 
+    x.dot(z), y.dot(z), z.dot(z);
+
+    return rot;
 }
 

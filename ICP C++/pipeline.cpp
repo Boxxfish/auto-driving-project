@@ -21,6 +21,7 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(Frame frame)
     //fix infrastructure point cloud
     PointCloudT::Ptr cloud_c_new (new PointCloudT); 
     pcl::transformPointCloud (*frame.cloud_i, *frame.cloud_i, frame.pose_i);
+    
     //add noise
     Eigen::Matrix4d pose = add_noise_xyz(frame.pose_c, 3);
     //ground align

@@ -30,7 +30,7 @@ void Dataset::load_i_pose(){
         std::getline(pose_file, line);
       }
     }
-    this->i_pose = Eigen::Map<Eigen::Matrix<double, 4, 4>>(elems.data());
+    this->i_pose = (Eigen::Map<Eigen::Matrix<double, 4, 4>>(elems.data())).transpose();
     pose_file.close();
   }
 }

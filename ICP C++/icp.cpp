@@ -90,7 +90,7 @@ std::vector<Eigen::Matrix4d> load_poses(const std::string& path) {
 }
 
 // Returns the location from a pose, with optional gaussian noise.
-Eigen::Matrix<double, 3, 1> get_loc(const Eigen::Matrix4d& pose, double stddev = 0.0) {
+Eigen::Matrix<double, 3, 1> get_loc(const Eigen::Matrix4d &pose, double stddev = 0.0) {
   auto loc = Eigen::Vector3<double> { pose.block<1, 3>(3, 0).reshaped() };
   if (stddev > 0.0) {
     std::default_random_engine generator;

@@ -23,10 +23,13 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(const Frame frame)
     //ground removal
 
     //icp
+    std::cout << "end of pipeline" << std::endl;
     return Eigen::Matrix4d();
 }
 
-Eigen::Matrix4d Pipeline::add_noise_xyz(const Eigen::Matrix4d &src,double stddev){
+Eigen::Matrix4d Pipeline::add_noise_xyz(const Eigen::Matrix4d& src,double stddev){
+
+        std::cout << "add noise " << std::endl;
         std::default_random_engine generator;
         std::normal_distribution<double> dist(0.0, stddev);
         // Modify only x and y coords
@@ -36,9 +39,9 @@ Eigen::Matrix4d Pipeline::add_noise_xyz(const Eigen::Matrix4d &src,double stddev
 
         Eigen::Matrix4d new_pose;
         new_pose = src;
-        new_pose(0,4) += x;
-        new_pose(0,4) += y;
-        new_pose(0,4) += z;
+        new_pose(0,3) += x;
+        new_pose(0,3) += y;
+        new_pose(0,3) += z;
 
         return new_pose;
 }

@@ -56,6 +56,7 @@ void Dataset::load_c_poses(){
         auto const pose = Eigen::Map<Eigen::Matrix<double, 4, 4>>(elems.data());
         std::cout << "Car Pose Read:\n" << pose << std::endl;
         this->c_poses.push_back(pose.transpose());
+        this->c_poses_corrected.push_back(pose.transpose());
     }
     pose_file.close();
 }

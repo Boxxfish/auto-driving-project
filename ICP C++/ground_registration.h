@@ -17,7 +17,7 @@
 
 Eigen::Vector3f getDirectionVector(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
 
-std::pair<Eigen::Vector3f, Eigen::Vector3f> getVectors(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> getVectors(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, bool remove_ground);
 
 Eigen::Matrix4f performRotationAlignment(const pcl::PointCloud<pcl::PointXYZ>::Ptr& infraCloud,
                                          const pcl::PointCloud<pcl::PointXYZ>::Ptr& vehicleCloud);

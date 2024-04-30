@@ -23,18 +23,17 @@ class Pipeline
         std::optional<Eigen::Matrix4d> align_icp(PointCloudT::Ptr src, PointCloudT::Ptr target, int iters);
 
         /// Given a point cloud, returns a new point cloud with ground points removed.
-        PointCloudT::Ptr remove_ground(PointCloudT::Ptr src);
+        PointCloudT::Ptr remove_ground_basic(PointCloudT::Ptr src);
 
-        /// Given a point cloud, returns a vector indicating the "up" direction of the ground plane.
-        Eigen::Matrix3d ground_plane(PointCloudT::Ptr src);
+        /// create rotation matrix given vectors from gound plane analysis
+        Eigen::Matrix3d create_rot_matrix(std::pair<Eigen::Vector3f, Eigen::Vector3f> vectors);
 
         Eigen::Matrix4d add_noise_xyz(const Eigen::Matrix4d &src,double stddev);
-        Eigen::Matrix4d add_noise_rot(const Eigen::Matrix4d &src,double stddev);
 
     public:
         /// Given a frame, returns where it thinks the vehicle is.
         /// This method is run on every frame in order.
-        virtual Eigen::Matrix4d guess_v_pose(const Frame frame) = 0;
+        virtual Eigen::Matrix4d guess_v_pose(Frame &frame) = 0;
         /// Given a source and target point cloud, returns a matrix that aligns the source to the target.
         /// If alignment has failed, returns nullopt.
 };
@@ -45,7 +44,7 @@ class Pipeline
 class StdPipeline : public Pipeline
 {
     public:
-        Eigen::Matrix4d guess_v_pose(const Frame frame);
+        Eigen::Matrix4d guess_v_pose(Frame &frame);
 };
 
 

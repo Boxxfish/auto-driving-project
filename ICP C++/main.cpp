@@ -36,20 +36,21 @@ int main (int argc, char* argv[])
     std::cout << "Frame Loaded " << path << std::endl;
 
     Eigen::Matrix4d c = pipeline.guess_v_pose(f1);
+    create_visualizer(std::string("Demo Visualizer"), f1.cloud_c, f1.cloud_c, f1.cloud_c); 
 
     std::cout << c << std::endl;
-
-    std::cout << "Dataset poses vector: \n" << dataset1_d1->c_poses_corrected[1] << std::endl;
     dataset1_d1->c_poses_corrected[1] = c;
+
+    std::cout << "c guess position matrix: \n" << dataset1_d1->c_poses_corrected[1] << std::endl;
     
 
 
     //vizulization stuff
 
     PointCloudT::Ptr cloud_c_new (new PointCloudT); 
-    std::cout << "pose c: \n" << f1.pose_c << std::endl;
+    std::cout << "original pose c: \n" << f1.pose_c << std::endl;
     Eigen::Matrix4d t = f1.pose_i;
     std::cout << "pose i: \n" << f1.pose_i << std::endl;
-    pcl::transformPointCloud (*f1.cloud_c, *cloud_c_new, f1.pose_c);
+    pcl::transformPointCloud (*f1.cloud_c, *cloud_c_new, dataset1_d1->c_poses_corrected[1]);
     create_visualizer(std::string("Demo Visualizer"), f1.cloud_i, f1.cloud_c, cloud_c_new); 
 }

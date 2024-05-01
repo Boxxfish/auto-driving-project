@@ -21,34 +21,12 @@ class Dataset;
 
 class Pipeline
 {
-    protected:
-        Eigen::Matrix4d align_icp(PointCloudT::Ptr src, PointCloudT::Ptr target, int iters,int max_corresp_dist = 3);
+public:
+    Pipeline() {}
 
-        /// Given a point cloud, returns a new point cloud with ground points removed.
-        PointCloudT::Ptr remove_ground_basic(PointCloudT::Ptr src);
-
-        /// create rotation matrix given vectors from gound plane analysis
-        Eigen::Matrix3d create_rot_matrix(Eigen::Vector3f z, Eigen::Vector3f y);
-
-        Eigen::Matrix4d get_gps_location(const Eigen::Matrix4d &src,double stddev);
-
-        Eigen::Matrix4d location_interpolation(Frame &f1, Eigen::Matrix4d translation, Frame &fn);
-
-    public:
-        Dataset dataset;
-        Pipeline(){}
-        Pipeline(Dataset &dataset){
-            this->dataset = dataset;
-        }
-
-        //runs on the whole dataset
-        virtual void run() = 0;
-
-        /// Given a frame, returns where it thinks the vehicle is.
-        /// This method is run on every frame in order.
-        virtual Eigen::Matrix4d guess_v_pose(Frame &frame) = 0;
-        /// Given a source and target point cloud, returns a matrix that aligns the source to the target.
-        /// If alignment has failed, returns nullopt.
+    /// Given a frame, returns where it thinks the vehicle is.
+    /// This method is run on every frame in order.
+    virtual Eigen::Matrix4d guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose) = 0;
 };
 
 /// Our proposed pipeline.
@@ -56,36 +34,41 @@ class Pipeline
 /// Prior guesses are used as a starting point for future guesses.
 class StdPipeline : public Pipeline
 {
-    public:
-        Eigen::Matrix4d guess_v_pose(Frame &frame);
-        void run();
-        StdPipeline(Dataset &dataset): Pipeline(dataset){}
-        StdPipeline(): Pipeline(){}
-
+public:
+    StdPipeline() : Pipeline() {}
+    Eigen::Matrix4d guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose);
 };
 
 // only uses icp, uses ground truth rotation in initial guess
 // still does ground removal
 class SimplePipeline : public Pipeline
 {
-    public:
-        Eigen::Matrix4d guess_v_pose(Frame &frame);
-        void run();
-        SimplePipeline(Dataset &dataset): Pipeline(dataset){}
-        SimplePipeline(): Pipeline(){}
-
+public:
+    SimplePipeline() : Pipeline() {}
+    Eigen::Matrix4d guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose);
 };
 
 // only uses icp, uses ground truth rotation in initial guess
 // still does ground removal
 class InterpolationPipeline : public Pipeline
 {
-    public:
-        Eigen::Matrix4d guess_v_pose(Frame &frame);
-        void run();
-        InterpolationPipeline(Dataset &dataset): Pipeline(dataset){}
-
-
+public:
+    InterpolationPipeline() : Pipeline() {}
+    Eigen::Matrix4d guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose);
 };
+
+/// Given a source and target point cloud, returns a matrix that aligns the source to the target.
+/// If alignment has failed, returns nullopt.
+Eigen::Matrix4d align_icp(PointCloudT::Ptr src, PointCloudT::Ptr target, int iters, int max_corresp_dist = 3);
+
+/// Given a point cloud, returns a new point cloud with ground points removed.
+PointCloudT::Ptr remove_ground_basic(PointCloudT::Ptr src);
+
+/// create rotation matrix given vectors from gound plane analysis
+Eigen::Matrix3d create_rot_matrix(Eigen::Vector3f z, Eigen::Vector3f y);
+
+Eigen::Matrix4d get_gps_location(const Eigen::Matrix4d &src, double stddev);
+
+Eigen::Matrix4d location_interpolation(Frame &f1, Eigen::Matrix4d translation, Frame &fn);
 
 #endif

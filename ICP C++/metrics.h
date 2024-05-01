@@ -42,7 +42,7 @@ void print_metrics(Pipeline &pipeline, std::vector<int> easy_idxs, std::vector<i
     double hard_time = 0.0;
     double SUCCESS_RTE = 2.0;
 
-    for (int i = 0; i < this->pipeline.dataset.c_poses.size()-1; i++){
+    for (int i = 0; i < pipeline.dataset.c_poses.size()-1; i++){
         double rre = compute_rre(pipeline.dataset.c_poses_corrected[i], pipeline.dataset.c_poses[i]);
         double rte = compute_rte(pipeline.dataset.c_poses_corrected[i], pipeline.dataset.c_poses[i]);
         if (std::find(easy_idxs.begin(), easy_idxs.end(), i) != easy_idxs.end()){

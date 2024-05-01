@@ -313,7 +313,7 @@ Eigen::Matrix4d get_best_rotation(PointCloudT::Ptr src, PointCloudT::Ptr target,
 
 double get_icp_score(PointCloudT::Ptr src, PointCloudT::Ptr target){
     pcl::IterativeClosestPoint<PointT, PointT> icp;
-    icp.setMaximumIterations(10);
+    icp.setMaximumIterations(1);
     icp.setInputTarget(target);
     icp.setInputSource(src);
     icp.setMaxCorrespondenceDistance(3);

@@ -22,6 +22,7 @@ class Frame{
         Eigen::Matrix4d pose_i;
         Eigen::Matrix4d pose_c;
         Frame(int frame_num, Dataset* dataset);
+        Frame(){}
 };
 
 #endif

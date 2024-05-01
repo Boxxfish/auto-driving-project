@@ -1,6 +1,9 @@
 
 #include <pcl/console/time.h> // TicToc
 #include "metrics.h"
+#include "visualizer.h"
+
+#include <rerun.hpp>
 
 // Function to calculate and return RRE (degrees).
 auto compute_rre(const Eigen::Matrix4d &current_transformation, const Eigen::Matrix4d &ground_truth_transformation) -> double
@@ -43,13 +46,21 @@ void print_metrics(Pipeline &pipeline, const Dataset &dataset)
     double easy_time = 0.0;
     double hard_time = 0.0;
 
+    const auto rec = rerun::RecordingStream("alignment");
+    rec.connect("127.0.0.1:9876").throw_on_failure();
     for (int i = 0; i < DS_SIZE; i++)
     {
         std::cout << i << std::endl;
+
         // Run current frame through pipeline and time completion
         pcl::console::TicToc time;
-        auto const c_pose_est = pipeline.guess_v_pose(dataset.frames[i], dataset.i_pose);
+        const Eigen::Matrix4d c_pose_est = pipeline.guess_v_pose(dataset.frames[i], dataset.i_pose);
         auto const elapsed = time.toc();
+        
+        // Visualize
+        log_pose(rec, "c_pose_est", c_pose_est);
+        log_pose(rec, "c_pose", dataset.frames[i].pose_c);
+        log_pose(rec, "i_pose", dataset.i_pose);
 
         double rre = compute_rre(c_pose_est, dataset.frames[i].pose_c);
         double rte = compute_rte(c_pose_est, dataset.frames[i].pose_c);

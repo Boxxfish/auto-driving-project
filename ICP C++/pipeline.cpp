@@ -138,7 +138,7 @@ Eigen::Matrix4d SimplePipeline::guess_v_pose(Frame &frame)
     frame.cloud_c = get<2>(vectors);
 
     //icp
-    Eigen::Matrix4d icp_pose = Pipeline::align_icp(frame.cloud_c, frame.cloud_i, 150); 
+    Eigen::Matrix4d icp_pose = Pipeline::align_icp(frame.cloud_c, frame.cloud_i, 50); 
 
     // std::cout << "end of pipeline" << std::endl;
     return icp_pose;
@@ -301,7 +301,13 @@ Eigen::Matrix4d Pipeline::align_icp(PointCloudT::Ptr src, PointCloudT::Ptr targe
     icp.setMaxCorrespondenceDistance(max_corresp_dist);
     PointCloudT::Ptr cloud_final(new PointCloudT);
     icp.align(*cloud_final);
-    return Eigen::Matrix4d(icp.getFinalTransformation().cast<double>());
+    create_visualizer(std::string("Demo Visualizer"), target, src, cloud_final); 
+    Eigen::Matrix4d transform = Eigen::Matrix4d(icp.getFinalTransformation().cast<double>());
+
+    PointCloudT::Ptr test(new PointCloudT);
+    pcl::transformPointCloud (*src, *test, transform);
+    create_visualizer(std::string("Demo Visualizer"), target, src, test); 
+    return transform;
 }
 
 /// Given a point cloud, returns a new point cloud with ground points removed.

@@ -54,7 +54,7 @@ int main (int argc, char* argv[])
     Eigen::Matrix4d transform = pipeline.guess_v_pose(frame);
     //vizulization stuff
     PointCloudT::Ptr cloud_c_new (new PointCloudT); 
-    pcl::transformPointCloud (*frame.cloud_c, *cloud_c_new, dataset1_d1.c_poses_corrected[1]);
+    pcl::transformPointCloud (*frame.cloud_c, *cloud_c_new, transform);
     create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new); 
 
 

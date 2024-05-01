@@ -69,5 +69,8 @@ Eigen::Matrix3d create_rot_matrix(Eigen::Vector3f z, Eigen::Vector3f y);
 Eigen::Matrix4d get_gps_location(const Eigen::Matrix4d &src, double stddev);
 
 // Eigen::Matrix4d location_interpolation(Frame &f1, Eigen::Matrix4d translation, Frame &fn);
+Eigen::Matrix4d get_best_rotation(Frame frame, PointCloudT::Ptr target);
+double get_icp_score(PointCloudT::Ptr src, PointCloudT::Ptr target);
+Eigen::Matrix4d make_custom_rot_matrix(double degrees);
 
 #endif

@@ -34,6 +34,21 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(const Frame &frame, const Eigen::Matri
     std::tuple<Eigen::Vector3f, Eigen::Vector3f, PointCloudT::Ptr> vectors = getVectors(c_temp, remove_ground);
     c_temp = std::get<2>(vectors);
 
+    // angle guess
+    auto rot = get_best_rotation(frame, i_temp);
+
+    pose(0, 0) = rot(0, 0);
+    pose(0, 1) = rot(0, 1);
+    pose(0, 2) = rot(0, 2);
+
+    pose(1, 0) = rot(1, 0);
+    pose(1, 1) = rot(1, 1);
+    pose(1, 2) = rot(1, 2);
+
+    pose(2, 0) = rot(2, 0);
+    pose(2, 1) = rot(2, 1);
+    pose(2, 2) = rot(2, 2);
+
     pcl::transformPointCloud(*frame.cloud_c, *c_temp, pose);
 
     // icp
@@ -209,4 +224,85 @@ Eigen::Matrix3d create_rot_matrix(Eigen::Vector3f z, Eigen::Vector3f y)
         x.dot(z), y.dot(z), z.dot(z);
 
     return rot;
+}
+
+
+
+Eigen::Matrix4d get_best_rotation(Frame frame, PointCloudT::Ptr target){
+    std::vector<double> scores;
+    double degree = 0;
+
+    Eigen::Matrix4d pose;
+    PointCloudT::Ptr c_0 (new PointCloudT); 
+    *c_0 = *frame.cloud_c;
+    scores.push_back(get_icp_score(c_0, target));
+
+    PointCloudT::Ptr c_45 (new PointCloudT); 
+    degree = 45;
+    pose = make_custom_rot_matrix(degree);
+    pcl::transformPointCloud(*c_0, *c_45, pose);
+    scores.push_back(get_icp_score(c_45, target));
+
+    PointCloudT::Ptr c_90 (new PointCloudT);
+    degree = 90; 
+    pose = make_custom_rot_matrix(degree);
+    pcl::transformPointCloud(*c_0, *c_90, pose);
+    scores.push_back(get_icp_score(c_90, target));
+
+    PointCloudT::Ptr c_135 (new PointCloudT); 
+    degree = 135;
+    pose = make_custom_rot_matrix(degree);
+    pcl::transformPointCloud(*c_0, *c_135, pose);
+    scores.push_back(get_icp_score(c_135, target));
+
+    PointCloudT::Ptr c_180 (new PointCloudT); 
+    degree = 180;
+    pose = make_custom_rot_matrix(degree);
+    pcl::transformPointCloud(*c_0, *c_180, pose);
+    scores.push_back(get_icp_score(c_180, target));
+
+    PointCloudT::Ptr c_225 (new PointCloudT); 
+    degree = 225;
+    pose = make_custom_rot_matrix(degree);
+    pcl::transformPointCloud(*c_0, *c_225, pose);
+    scores.push_back(get_icp_score(c_225, target));
+
+    PointCloudT::Ptr c_270 (new PointCloudT); 
+    degree = 270;
+    pose = make_custom_rot_matrix(degree);
+    pcl::transformPointCloud(*c_0, *c_270, pose);
+    scores.push_back(get_icp_score(c_270, target));
+
+    PointCloudT::Ptr c_315 (new PointCloudT); 
+    degree = 315;
+    pose = make_custom_rot_matrix(degree);
+    pcl::transformPointCloud(*c_0, *c_315, pose);
+    scores.push_back(get_icp_score(c_315, target));
+
+    int i = min_element(scores.begin(),scores.end()) - scores.begin();
+    degree = i*45;
+    return make_custom_rot_matrix(degree);
+}
+
+double get_icp_score(PointCloudT::Ptr src, PointCloudT::Ptr target){
+    pcl::IterativeClosestPoint<PointT, PointT> icp;
+    icp.setMaximumIterations(10);
+    icp.setInputTarget(target);
+    icp.setInputSource(src);
+    icp.setMaxCorrespondenceDistance(3);
+    PointCloudT::Ptr cloud_final(new PointCloudT);
+    icp.align(*cloud_final);
+    return icp.getFitnessScore();
+}
+
+Eigen::Matrix4d make_custom_rot_matrix(double degrees){
+    double theta = degrees * (M_PI / 180.0); 
+
+    // Create a rotation matrix around the x-axis
+    Eigen::Matrix4d rotation_matrix;
+    rotation_matrix << 1, 0, 0, 1,
+                       0, cos(theta), -sin(theta), 1,
+                       0, sin(theta), cos(theta), 1,
+                       0, 0, 0, 1;
+    return rotation_matrix;    
 }

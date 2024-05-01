@@ -27,8 +27,8 @@ Dataset::Dataset(const std::string &path)
   // Load easy and hard indices
   std::ifstream f(path + std::string("splits/info.json"));
   auto data = json::parse(f);
-  this->hard_idxs = std::vector<int>(data["hard"]);
-  this->easy_idxs = std::vector<int>(data["easy"]);
+  std::vector<int> hard_idxs = data["hard"];
+  std::vector<int> easy_idxs = data["easy"];
 }
 
 std::vector<Eigen::Matrix4d> read_poses(const std::string &path)

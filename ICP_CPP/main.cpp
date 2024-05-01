@@ -46,6 +46,6 @@ int main(int argc, char *argv[])
     // create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new);
 
     // METRICS
-    SimplePipeline pipeline;
+    StdPipeline pipeline;
     print_metrics(pipeline, dataset);
 }

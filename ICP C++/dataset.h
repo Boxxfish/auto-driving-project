@@ -29,7 +29,11 @@ public:
     /// Infra ground truth pose.
     Eigen::Matrix4d i_pose;
     /// Frames in our dataset, should be of length 300.
-    std::vector<Frame>
+    std::vector<Frame>;
+    /// Indices corresponding to easy frames (overlap >= 50%).
+    std::vector<int> easy_idxs;
+    /// Indices corresponding to hard frames (overlap < 50%).
+    std::vector<int> hard_idxs;
 
     /// Loads poses and frames from a path.
     Dataset(const std::string &path);

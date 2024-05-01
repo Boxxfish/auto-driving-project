@@ -11,6 +11,7 @@ double compute_rre(const Eigen::Matrix4d &current_transformation, const Eigen::M
 // Function to calculate and return RTE (meters).
 double compute_rte(const Eigen::Matrix4d &current_transformation, const Eigen::Matrix4d &ground_truth_transformation);
 
-void print_metrics(Pipeline &pipeline, std::vector<int> easy_idxs, std::vector<int> hard_idxs);
+/// Given a pipeline and a dataset, runs the pipeline on the dataset and collects metrics.
+void print_metrics(Pipeline &pipeline, const Dataset& dataset);
 
 #endif

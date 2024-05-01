@@ -27,7 +27,10 @@ auto compute_rte(const Eigen::Matrix4d &current_transformation, const Eigen::Mat
     return RTE;
 }
 
-void print_metrics(Pipeline &pipeline, std::vector<int> easy_idxs, std::vector<int> hard_idxs){
+void print_metrics(Pipeline &pipeline, const Dataset &dataset)
+{
+    const double SUCCESS_RTE = 2.0;
+    const int DS_SIZE = 300;
     double easy_total_rte = 0.0;
     double hard_total_rte = 0.0;
     double easy_total_rre = 0.0;
@@ -38,19 +41,25 @@ void print_metrics(Pipeline &pipeline, std::vector<int> easy_idxs, std::vector<i
     int hard_success = 0;
     double easy_time = 0.0;
     double hard_time = 0.0;
-    double SUCCESS_RTE = 2.0;
 
-    for (int i = 0; i < pipeline.dataset.c_poses.size()-1; i++){
-        double rre = compute_rre(pipeline.dataset.c_poses_corrected[i], pipeline.dataset.c_poses[i]);
-        double rte = compute_rte(pipeline.dataset.c_poses_corrected[i], pipeline.dataset.c_poses[i]);
-        if (std::find(easy_idxs.begin(), easy_idxs.end(), i) != easy_idxs.end()){
+    for (int i = 0; i < DS_SIZE; i++)
+    {
+        // Run current frame through pipeline and time completion
+        pcl::console::TicToc time;
+        auto const c_pose_est = pipeline.guess_v_pose(dataset.frames[i], dataset.i_pose);
+        auto const elapsed = time.toc();
+
+        double rre = compute_rre(c_pose_est, dataset.frames[i].pose_c);
+        double rte = compute_rte(c_pose_est, dataset.frames[i].pose_c);
+        if (std::find(easy_idxs.begin(), easy_idxs.end(), i) != easy_idxs.end())
+        {
             easy_total_rte += rte;
             easy_total_rre += rre;
             if (rte <= SUCCESS_RTE)
             {
                 easy_success += 1;
             }
-            easy_time += pipeline.dataset.computation_time_list[i];
+            easy_time += elapsed;
             easy_total += 1;
         }
         else
@@ -61,10 +70,9 @@ void print_metrics(Pipeline &pipeline, std::vector<int> easy_idxs, std::vector<i
             {
                 hard_success += 1;
             }
-            hard_time += pipeline.dataset.computation_time_list[i];
+            hard_time += elapsed;
             hard_total += 1;
         }
-
     }
 
     std::cout << "Avg. RTE (Easy): " << (float)easy_total_rte / (float)easy_total << std::endl;
@@ -75,5 +83,4 @@ void print_metrics(Pipeline &pipeline, std::vector<int> easy_idxs, std::vector<i
     std::cout << "Avg. RRE (Hard): " << (float)hard_total_rre / (float)hard_total << std::endl;
     std::cout << "Success Rate (Hard): " << (float)hard_success / (float)hard_total << std::endl;
     std::cout << "Avg. Time (Hard): " << (float)hard_time / (float)hard_total << std::endl;
-
 }

@@ -1,6 +1,9 @@
 #include "dataset.h"
 #include <fstream>
 #include <iostream>
+#include "json.hpp"
+
+using json = nlohmann::json;
 
 Dataset::Dataset(const std::string &path)
 {
@@ -15,11 +18,17 @@ Dataset::Dataset(const std::string &path)
     auto const cloud_i = load_pc(splits_path_prefix + "_i.pcd");
     auto const cloud_c = load_pc(splits_path_prefix + "_v.pcd");
     this->frames.push_back({
-      .cloud_i = cloud_i,
-      .cloud_c = cloud_c,
-      .pose_c = c_poses[i],
+        .cloud_i = cloud_i,
+        .cloud_c = cloud_c,
+        .pose_c = c_poses[i],
     });
   }
+
+  // Load easy and hard indices
+  std::ifstream f(path + std::string("splits/info.json"));
+  auto data = json::parse(f);
+  std::vector<int> hard_idxs = data["hard"];
+  std::vector<int> easy_idxs = data["easy"];
 }
 
 std::vector<Eigen::Matrix4d> read_poses(const std::string &path)

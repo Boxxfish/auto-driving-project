@@ -22,10 +22,10 @@ struct Frame
     Eigen::Matrix4d pose_c;
 };
 
+/// A datset containing all information across frames.
 class Dataset
 {
 public:
-    std::string path;
     /// Infra ground truth pose.
     Eigen::Matrix4d i_pose;
     /// Frames in our dataset, should be of length 300.

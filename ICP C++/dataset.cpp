@@ -2,65 +2,66 @@
 #include <fstream>
 #include <iostream>
 
-Dataset::Dataset(){
+Dataset::Dataset(const std::string &path)
+{
+  // Load poses
+  this->i_pose = load_poses("I_W.txt")[0];
+  auto const c_poses = load_poses("V_W.txt");
 
+  // Load point clouds and store as frames
+  for (int i = 0; i < 300; i++)
+  {
+    auto const splits_path_prefix = dataset->path + "splits/" + std::to_string(frame_num);
+    auto const cloud_i = load_pc(splits_path_prefix + "_i.pcd");
+    auto const cloud_c = load_pc(splits_path_prefix + "_v.pcd");
+    this->frames.push_back({
+      .cloud_i = cloud_i,
+      .cloud_c = cloud_c,
+      .pose_c = c_poses[i],
+    });
+  }
 }
 
-Dataset::Dataset(std::string& path){
-    this->path = path;
-    load_i_pose();
-    load_c_poses();
-}
-
-Frame Dataset::getFrame(int frame_num){
-    Frame frame(frame_num, this);
-    return frame;
-}
-
-void Dataset::load_i_pose(){
+std::vector<Eigen::Matrix4d> read_poses(const std::string &path)
+{
   std::ifstream pose_file;
-  pose_file.open((this->path+"I_W.txt"));
+  pose_file.open(path);
+
   std::string line;
   std::string space = " ";
-  while (std::getline(pose_file, line)) {
+  std::vector<Eigen::Matrix4d> poses;
+  while (std::getline(pose_file, line))
+  {
     std::vector<double> elems;
-    for (int row = 0; row < 4; row++) {
-      for (int col = 0; col < 4; col++) {
+    for (int row = 0; row < 4; row++)
+    {
+      for (int col = 0; col < 4; col++)
+      {
         double elem = std::stod(line.substr(0, line.find(space)));
         line.erase(0, line.find(space) + 1);
         elems.push_back(elem);
       }
-      if (row < 3) {
+      if (row < 3)
+      {
         std::getline(pose_file, line);
       }
     }
-    this->i_pose = (Eigen::Map<Eigen::Matrix<double, 4, 4>>(elems.data())).transpose();
-    pose_file.close();
+    auto const pose = Eigen::Map<Eigen::Matrix<double, 4, 4>>(elems.data());
+    poses.push_back(pose.transpose());
   }
+  pose_file.close();
+
+  return poses;
 }
 
-void Dataset::load_c_poses(){
-    std::cout << "in load_c_poses" << std::endl;
-    std::ifstream pose_file;
-    pose_file.open((this->path+"V_W.txt"));
-    std::string line;
-    std::string space = " ";
-    while (std::getline(pose_file, line)) {
-        std::vector<double> elems;
-        for (int row = 0; row < 4; row++) {
-        for (int col = 0; col < 4; col++) {
-            double elem = std::stod(line.substr(0, line.find(space)));
-            line.erase(0, line.find(space) + 1);
-            elems.push_back(elem);
-        }
-        if (row < 3) {
-            std::getline(pose_file, line);
-        }
-        }
-        auto const pose = Eigen::Map<Eigen::Matrix<double, 4, 4>>(elems.data());
-        std::cout << "Car Pose Read:\n" << pose << std::endl;
-        this->c_poses.push_back(pose.transpose());
-        this->c_poses_corrected.push_back(pose.transpose());
-    }
-    pose_file.close();
+PointCloudT::Ptr load_pc(const std::string &path)
+{
+  PointCloudT::Ptr cloud_temp(new PointCloudT);
+
+  if (pcl::io::loadPCDFile(path, *(cloud_temp)) < 0)
+  {
+    PCL_ERROR("Error loading cloud.\n");
+    exit(-1);
+  }
+  return cloud_temp;
 }

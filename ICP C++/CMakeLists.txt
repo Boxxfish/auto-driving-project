@@ -8,7 +8,7 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
-set(SOURCES visualizer.cpp ground_registration.cpp dataset.cpp visualizer.cpp frame.cpp pipeline.cpp metrics.cpp)
+set(SOURCES visualizer.cpp ground_registration.cpp dataset.cpp visualizer.cpp pipeline.cpp metrics.cpp)
 add_executable (icp icp.cpp)
 add_executable (compute_baselines compute_baselines.cpp)
 add_executable (main main.cpp)

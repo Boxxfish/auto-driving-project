@@ -28,17 +28,27 @@ using json = nlohmann::json;
 
 int main (int argc, char* argv[])
 {
+
+
     //ALIGNMENT
     // For reproducability
     srand(100);
 
     StdPipeline pipeline;
     std::string path = "../../data/Dataset_1/D1/";
+
+    std::ifstream f(path + std::string("splits/info.json"));
+    auto data = json::parse(f);
+    std::vector<int> hard_idxs = data["hard"];
+    std::vector<int> easy_idxs = data["easy"];
+
+
     auto dataset1_d1 = new Dataset(path);
     std::cout << "Dataset Loaded from " << path << std::endl;
     std::vector<double> time_list;
 
-    for (int i = 0; i < dataset1_d1->c_poses.size(); i++){
+    std::cout << "Dataset Size: " << dataset1_d1->c_poses.size() <<std::endl;
+    for (int i = 0; i < dataset1_d1->c_poses.size()-1; i++){
         Frame f1 = dataset1_d1->getFrame(i);
         std::cout << "Frame Loaded " << i << std::endl;
         pcl::console::TicToc time;
@@ -52,10 +62,7 @@ int main (int argc, char* argv[])
 
 
     //METRICS
-    std::ifstream f(path + std::string("splits/info.json"));
-    auto data = json::parse(f);
-    std::vector<int> hard_idxs = data["hard"];
-    std::vector<int> easy_idxs = data["easy"];
+
 
     double easy_total_rte = 0.0;
     double hard_total_rte = 0.0;
@@ -69,7 +76,7 @@ int main (int argc, char* argv[])
     double hard_time = 0.0;
     double SUCCESS_RTE = 2.0;
 
-    for (int i = 0; i < dataset1_d1->c_poses.size(); i++){
+    for (int i = 0; i < dataset1_d1->c_poses.size()-1; i++){
         double rre = compute_rre(dataset1_d1->c_poses_corrected[i], dataset1_d1->c_poses[i]);
         double rte = compute_rte(dataset1_d1->c_poses_corrected[i], dataset1_d1->c_poses[i]);
         if (std::find(easy_idxs.begin(), easy_idxs.end(), i) != easy_idxs.end()){

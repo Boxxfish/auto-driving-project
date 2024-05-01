@@ -36,6 +36,7 @@ class Pipeline
 
     public:
         Dataset dataset;
+        Pipeline(){}
         Pipeline(Dataset &dataset){
             this->dataset = dataset;
         }
@@ -58,6 +59,9 @@ class StdPipeline : public Pipeline
     public:
         Eigen::Matrix4d guess_v_pose(Frame &frame);
         void run();
+        StdPipeline(Dataset &dataset): Pipeline(dataset){}
+        StdPipeline(): Pipeline(){}
+
 };
 
 // only uses icp, uses ground truth rotation in initial guess
@@ -68,6 +72,7 @@ class SimplePipeline : public Pipeline
         Eigen::Matrix4d guess_v_pose(Frame &frame);
         void run();
         SimplePipeline(Dataset &dataset): Pipeline(dataset){}
+        SimplePipeline(): Pipeline(){}
 
 };
 
@@ -78,6 +83,9 @@ class InterpolationPipeline : public Pipeline
     public:
         Eigen::Matrix4d guess_v_pose(Frame &frame);
         void run();
+        InterpolationPipeline(Dataset &dataset): Pipeline(dataset){}
+
+
 };
 
 #endif

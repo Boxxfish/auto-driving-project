@@ -11,13 +11,6 @@
 #include "visualizer.h"
 #include <pcl/console/time.h> // TicToc
 
-// Pipeline::Pipeline(){
-
-// }
-
-// Pipeline::Pipeline(Dataset &dataset){
-//     this->dataset = dataset;
-// }
 
 void StdPipeline::run(){
     for (int i = 0; i < dataset.c_poses.size()-1; i++){

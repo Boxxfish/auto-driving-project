@@ -48,21 +48,23 @@ int main (int argc, char* argv[])
 
     std::cout << "Dataset Size: " << dataset1_d1.c_poses.size() <<std::endl;
 
-    SimplePipeline pipeline(dataset1_d1);
-    pipeline.run();
+    // SINGLE FRAME RUN FOR TESTING
+    SimplePipeline pipeline;
+    Frame frame = dataset1_d1.getFrame(69);
+    Eigen::Matrix4d transform = pipeline.guess_v_pose(frame);
+    //vizulization stuff
+    PointCloudT::Ptr cloud_c_new (new PointCloudT); 
+    pcl::transformPointCloud (*frame.cloud_c, *cloud_c_new, dataset1_d1.c_poses_corrected[1]);
+    create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new); 
 
 
-    //METRICS
+    //READ FULL DATASET RUN
+    // SimplePipeline pipeline(dataset1_d1);
+    // pipeline.run();
 
-    print_metrics(pipeline, easy_idxs, hard_idxs);
+    // //METRICS
+    // print_metrics(pipeline, easy_idxs, hard_idxs);
 
 
-    // //vizulization stuff
 
-    // PointCloudT::Ptr cloud_c_new (new PointCloudT); 
-    // std::cout << "original pose c: \n" << f1.pose_c << std::endl;
-    // Eigen::Matrix4d t = f1.pose_i;
-    // std::cout << "pose i: \n" << f1.pose_i << std::endl;
-    // pcl::transformPointCloud (*f1.cloud_c, *cloud_c_new, dataset1_d1->c_poses_corrected[1]);
-    // create_visualizer(std::string("Demo Visualizer"), f1.cloud_i, f1.cloud_c, cloud_c_new); 
 }

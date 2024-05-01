@@ -48,23 +48,20 @@ int main (int argc, char* argv[])
 
     std::cout << "Dataset Size: " << dataset1_d1.c_poses.size() <<std::endl;
 
-    // SINGLE FRAME RUN FOR TESTING
-    SimplePipeline pipeline;
-    Frame frame = dataset1_d1.getFrame(69);
-    Eigen::Matrix4d transform = pipeline.guess_v_pose(frame);
-    //vizulization stuff
-    PointCloudT::Ptr cloud_c_new (new PointCloudT); 
-    pcl::transformPointCloud (*frame.cloud_c, *cloud_c_new, transform);
-    create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new); 
+    // // SINGLE FRAME RUN FOR TESTING
+    // SimplePipeline pipeline;
+    // Frame frame = dataset1_d1.getFrame(69);
+    // Eigen::Matrix4d transform = pipeline.guess_v_pose(frame);
+    // //vizulization stuff
+    // PointCloudT::Ptr cloud_c_new (new PointCloudT); 
+    // pcl::transformPointCloud (*frame.cloud_c, *cloud_c_new, transform);
+    // create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new); 
 
 
     //READ FULL DATASET RUN
-    // SimplePipeline pipeline(dataset1_d1);
-    // pipeline.run();
+    SimplePipeline pipeline(dataset1_d1);
+    pipeline.run();
 
-    // //METRICS
-    // print_metrics(pipeline, easy_idxs, hard_idxs);
-
-
-
+    //METRICS
+    print_metrics(pipeline, easy_idxs, hard_idxs);
 }

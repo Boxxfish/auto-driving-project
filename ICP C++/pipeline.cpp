@@ -10,7 +10,7 @@
 #include <tuple>
 #include "visualizer.h"
 #include <pcl/console/time.h> // TicToc
-
+#include "metrics.h"
 
 void StdPipeline::run(){
     for (int i = 0; i < dataset.c_poses.size()-1; i++){
@@ -91,15 +91,22 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(Frame &frame)
 
 void SimplePipeline::run(){
     for (int i = 0; i < this->dataset.c_poses.size()-1; i++){
-        Frame f1 = this->dataset.getFrame(i);
+        Frame frame = this->dataset.getFrame(i);
         std::cout << "Frame Loaded " << i << std::endl;
         pcl::console::TicToc time;
 
         time.tic();
-        Eigen::Matrix4d c = guess_v_pose(f1);
+        this->dataset.c_poses_corrected[i] = guess_v_pose(frame);
         this->dataset.computation_time_list.insert(this->dataset.computation_time_list.end(),time.toc()); 
+        PointCloudT::Ptr cloud_c_new (new PointCloudT); 
+        pcl::transformPointCloud (*frame.cloud_c, *cloud_c_new, this->dataset.c_poses_corrected[i]);
+        create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new); 
+        double rte  = compute_rte(this->dataset.c_poses_corrected[i], frame.pose_c);
+        double rre = compute_rre(this->dataset.c_poses_corrected[i], frame.pose_c);
 
-        this->dataset.c_poses_corrected[i] = c;        
+        std::cout << "RTE: " << rte << std::endl;
+        std::cout << "REE: " << rre << std::endl;
+
     }
 }
 
@@ -304,9 +311,9 @@ Eigen::Matrix4d Pipeline::align_icp(PointCloudT::Ptr src, PointCloudT::Ptr targe
     create_visualizer(std::string("Demo Visualizer"), target, src, cloud_final); 
     Eigen::Matrix4d transform = Eigen::Matrix4d(icp.getFinalTransformation().cast<double>());
 
-    PointCloudT::Ptr test(new PointCloudT);
-    pcl::transformPointCloud (*src, *test, transform);
-    create_visualizer(std::string("Demo Visualizer"), target, src, test); 
+    // PointCloudT::Ptr test(new PointCloudT);
+    // pcl::transformPointCloud (*src, *test, transform);
+    // create_visualizer(std::string("Demo Visualizer"), target, src, test); 
     return transform;
 }
 

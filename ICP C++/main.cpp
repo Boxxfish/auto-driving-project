@@ -48,17 +48,9 @@ int main (int argc, char* argv[])
     std::vector<double> time_list;
 
     std::cout << "Dataset Size: " << dataset1_d1->c_poses.size() <<std::endl;
-    for (int i = 0; i < dataset1_d1->c_poses.size()-1; i++){
-        Frame f1 = dataset1_d1->getFrame(i);
-        std::cout << "Frame Loaded " << i << std::endl;
-        pcl::console::TicToc time;
 
-        time.tic();
-        Eigen::Matrix4d c = pipeline.guess_v_pose(f1);
-        time_list.insert(time_list.end(),time.toc()); 
-
-        dataset1_d1->c_poses_corrected[i] = c;        
-    }
+    StdPipeline pipeline = new Pipeline(dataset);
+    pipeline.run;
 
 
     //METRICS
@@ -76,9 +68,9 @@ int main (int argc, char* argv[])
     double hard_time = 0.0;
     double SUCCESS_RTE = 2.0;
 
-    for (int i = 0; i < dataset1_d1->c_poses.size()-1; i++){
-        double rre = compute_rre(dataset1_d1->c_poses_corrected[i], dataset1_d1->c_poses[i]);
-        double rte = compute_rte(dataset1_d1->c_poses_corrected[i], dataset1_d1->c_poses[i]);
+    for (int i = 0; i < pipeline->dataset->c_poses.size()-1; i++){
+        double rre = compute_rre(pipeline->dataset->c_poses_corrected[i], pipeline->dataset->c_poses[i]);
+        double rte = compute_rte(dpipeline->dataset->c_poses_corrected[i], pipeline->dataset->c_poses[i]);
         if (std::find(easy_idxs.begin(), easy_idxs.end(), i) != easy_idxs.end()){
             easy_total_rte += rte;
             easy_total_rre += rre;
@@ -86,7 +78,7 @@ int main (int argc, char* argv[])
             {
                 easy_success += 1;
             }
-            easy_time += time_list[i];
+            easy_time += pipeline->dataset->computation_time_list[i];
             easy_total += 1;
         }
         else
@@ -97,7 +89,7 @@ int main (int argc, char* argv[])
             {
                 hard_success += 1;
             }
-            hard_time += time_list[i];
+            hard_time += pipeline->dataset->computation_time_list[i];
             hard_total += 1;
         }
 

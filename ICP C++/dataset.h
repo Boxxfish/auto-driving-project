@@ -20,7 +20,9 @@ class Dataset{
         Eigen::Matrix4d i_pose;
         std::vector<Eigen::Matrix4d> c_poses;
         std::vector<Eigen::Matrix4d> c_poses_corrected;
+        std::vector<double> computation_time_list;
 
+        Dataset();
         Dataset(std::string& path); //load ups the poses
         Frame getFrame(int frame_name);
 };

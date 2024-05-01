@@ -9,8 +9,25 @@
 #include "ground_registration.h"
 #include <tuple>
 #include "visualizer.h"
+#include <pcl/console/time.h> // TicToc
 
+Pipeline::Pipeline(Dataset& dataset){
+    this->dataset = dataset;
+}
 
+void StdPipeline::run(){
+    for (int i = 0; i < dataset.c_poses.size()-1; i++){
+        Frame f1 = dataset.getFrame(i);
+        std::cout << "Frame Loaded " << i << std::endl;
+        pcl::console::TicToc time;
+
+        time.tic();
+        Eigen::Matrix4d c = guess_v_pose(f1);
+        dataset.computation_time_list.insert(dataset.computation_time_list.end(),time.toc()); 
+
+        dataset.c_poses_corrected[i] = c;        
+    }
+}
 
 /// Our proposed pipeline.
 /// Aligns 2 axes with the ground plane, then applies ground removal and performs ICP alignment.
@@ -76,6 +93,21 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(Frame &frame)
     return icp_pose;
 }
 
+void SimplePipeline::run(){
+    for (int i = 0; i < dataset.c_poses.size()-1; i++){
+        Frame f1 = dataset.getFrame(i);
+        std::cout << "Frame Loaded " << i << std::endl;
+        pcl::console::TicToc time;
+
+        time.tic();
+        Eigen::Matrix4d c = guess_v_pose(f1);
+        dataset.computation_time_list.insert(dataset.computation_time_list.end(),time.toc()); 
+
+        dataset.c_poses_corrected[i] = c;        
+    }
+}
+
+//keeps rotation estiates from ground truth
 Eigen::Matrix4d SimplePipeline::guess_v_pose(Frame &frame)
 {
 
@@ -88,6 +120,19 @@ Eigen::Matrix4d SimplePipeline::guess_v_pose(Frame &frame)
     // pose(3,3) = 1;
     Eigen::Matrix4d pose = get_gps_location(frame.pose_c, 3);
     // std::cout << "Noise Added: \n" << pose << std::endl;
+
+    pose(0,0) = frame.pose_c(0,0);
+    pose(0,1) = frame.pose_c(0,1);
+    pose(0,2) = frame.pose_c(0,2);
+
+    pose(1,0) = frame.pose_c(1,0);
+    pose(1,1) = frame.pose_c(1,1);
+    pose(1,2) = frame.pose_c(1,2);
+
+    pose(2,0) = frame.pose_c(2,0);
+    pose(2,1) = frame.pose_c(2,1);
+    pose(2,2) = frame.pose_c(2,2);
+
     pcl::transformPointCloud (*frame.cloud_c, *frame.cloud_c, pose);
 
     //ground align
@@ -101,6 +146,14 @@ Eigen::Matrix4d SimplePipeline::guess_v_pose(Frame &frame)
 
     // std::cout << "end of pipeline" << std::endl;
     return icp_pose;
+}
+
+void InterpolationPipeline::run(){
+    //shit is going to get complex here
+}
+
+Eigen::Matrix4d InterpolationPipeline::guess_v_pose(Frame &frame){
+    return Eigen::Matrix4d();
 }
 
 Eigen::Matrix4d Pipeline::location_interpolation(Frame &f1, Eigen::Matrix4d translation, Frame &fn){

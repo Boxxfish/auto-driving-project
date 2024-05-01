@@ -57,6 +57,7 @@ void Dataset::load_c_poses(){
         std::cout << "Car Pose Read:\n" << pose << std::endl;
         this->c_poses.push_back(pose.transpose());
         this->c_poses_corrected.push_back(pose.transpose());
+        this->computation_time_list.push_back(0.0);
     }
     pose_file.close();
 }

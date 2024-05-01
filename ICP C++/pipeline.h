@@ -9,6 +9,7 @@
 #include <optional>
 #include <random>
 #include "frame.h"
+#include "dataset.h"
 
 // TODO: Replace this with our actual dataset stuff.
 
@@ -16,6 +17,7 @@ typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
 class Frame;
+class Dataset;
 
 class Pipeline
 {
@@ -33,6 +35,12 @@ class Pipeline
         Eigen::Matrix4d location_interpolation(Frame &f1, Eigen::Matrix4d translation, Frame &fn);
 
     public:
+        Dataset dataset;
+        Pipeline(Dataset& dataset); //constructor
+
+        //runs on the whole dataset
+        virtual void run() = 0;
+
         /// Given a frame, returns where it thinks the vehicle is.
         /// This method is run on every frame in order.
         virtual Eigen::Matrix4d guess_v_pose(Frame &frame) = 0;
@@ -47,6 +55,7 @@ class StdPipeline : public Pipeline
 {
     public:
         Eigen::Matrix4d guess_v_pose(Frame &frame);
+        void run();
 };
 
 // only uses icp, uses ground truth rotation in initial guess
@@ -55,6 +64,7 @@ class SimplePipeline : public Pipeline
 {
     public:
         Eigen::Matrix4d guess_v_pose(Frame &frame);
+        void run();
 };
 
 // only uses icp, uses ground truth rotation in initial guess
@@ -63,6 +73,7 @@ class InterpolationPipeline : public Pipeline
 {
     public:
         Eigen::Matrix4d guess_v_pose(Frame &frame);
+        void run();
 };
 
 #endif

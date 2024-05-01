@@ -32,10 +32,15 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(const Frame &frame, const Eigen::Matri
     bool remove_ground = true;
     // gets vectors and removes ground from car point cloud
     std::tuple<Eigen::Vector3f, Eigen::Vector3f, PointCloudT::Ptr> vectors = getVectors(c_temp, remove_ground);
-    c_temp = std::get<2>(vectors);
+    *c_temp = *std::get<2>(vectors);
 
     // angle guess
-    auto rot = get_best_rotation(frame, i_temp);
+    // create_visualizer(std::string("Demo Visualizer"), i_temp, c_temp, c_temp);
+
+    // get_icp_score(c_temp,i_temp);
+
+
+    auto rot = get_best_rotation(c_temp, i_temp, pose);
 
     pose(0, 0) = rot(0, 0);
     pose(0, 1) = rot(0, 1);
@@ -49,13 +54,19 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(const Frame &frame, const Eigen::Matri
     pose(2, 1) = rot(2, 1);
     pose(2, 2) = rot(2, 2);
 
-    pcl::transformPointCloud(*frame.cloud_c, *c_temp, pose);
+    pcl::transformPointCloud(*c_temp, *c_temp, pose);
 
     // icp
     Eigen::Matrix4d icp_pose = align_icp(c_temp, i_temp, 50);
+    Eigen::Matrix4d result = icp_pose * pose;
+    
+    PointCloudT::Ptr cloud_c_new(new PointCloudT);
+    pcl::transformPointCloud(*frame.cloud_c, *cloud_c_new, result);
+
+    create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new);
 
     // std::cout << "end of pipeline" << std::endl;
-    return icp_pose * pose;
+    return result;
 }
 
 // keeps rotation estiates from ground truth
@@ -228,56 +239,72 @@ Eigen::Matrix3d create_rot_matrix(Eigen::Vector3f z, Eigen::Vector3f y)
 
 
 
-Eigen::Matrix4d get_best_rotation(Frame frame, PointCloudT::Ptr target){
+Eigen::Matrix4d get_best_rotation(PointCloudT::Ptr src, PointCloudT::Ptr target, Eigen::Matrix4d translate){
     std::vector<double> scores;
     double degree = 0;
 
     Eigen::Matrix4d pose;
     PointCloudT::Ptr c_0 (new PointCloudT); 
-    *c_0 = *frame.cloud_c;
-    scores.push_back(get_icp_score(c_0, target));
+    pcl::transformPointCloud(*src, *c_0, translate);
+    scores.push_back(get_icp_score(src, target));
 
     PointCloudT::Ptr c_45 (new PointCloudT); 
     degree = 45;
     pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*c_0, *c_45, pose);
+    pcl::transformPointCloud(*src, *c_45, pose);
+    pcl::transformPointCloud(*c_45, *c_45, translate);
     scores.push_back(get_icp_score(c_45, target));
 
     PointCloudT::Ptr c_90 (new PointCloudT);
     degree = 90; 
     pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*c_0, *c_90, pose);
+    pcl::transformPointCloud(*src, *c_90, pose);
+    pcl::transformPointCloud(*c_90, *c_90, translate);
     scores.push_back(get_icp_score(c_90, target));
 
     PointCloudT::Ptr c_135 (new PointCloudT); 
     degree = 135;
     pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*c_0, *c_135, pose);
+    pcl::transformPointCloud(*src, *c_135, pose);
+    pcl::transformPointCloud(*c_135, *c_135, translate);
     scores.push_back(get_icp_score(c_135, target));
 
     PointCloudT::Ptr c_180 (new PointCloudT); 
     degree = 180;
     pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*c_0, *c_180, pose);
+    pcl::transformPointCloud(*src, *c_180, pose);
+    pcl::transformPointCloud(*c_180, *c_180, translate);
     scores.push_back(get_icp_score(c_180, target));
 
     PointCloudT::Ptr c_225 (new PointCloudT); 
     degree = 225;
     pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*c_0, *c_225, pose);
+    pcl::transformPointCloud(*src, *c_225, pose);
+    pcl::transformPointCloud(*c_225, *c_225, translate);
     scores.push_back(get_icp_score(c_225, target));
 
     PointCloudT::Ptr c_270 (new PointCloudT); 
     degree = 270;
     pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*c_0, *c_270, pose);
+    pcl::transformPointCloud(*src, *c_270, pose);
+    pcl::transformPointCloud(*c_270, *c_270, translate);
     scores.push_back(get_icp_score(c_270, target));
 
     PointCloudT::Ptr c_315 (new PointCloudT); 
     degree = 315;
     pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*c_0, *c_315, pose);
+    pcl::transformPointCloud(*src, *c_315, pose);
+    pcl::transformPointCloud(*c_315, *c_315, translate);
     scores.push_back(get_icp_score(c_315, target));
+
+    // std::cout << "Score 0: \n " << scores[0] << std::endl;
+    // std::cout << "Score 45: \n " << scores[1] << std::endl;
+    // std::cout << "Score 90: \n " << scores[2] << std::endl;
+    // std::cout << "Score 135: \n " << scores[3] << std::endl;
+    // std::cout << "Score 180: \n " << scores[4] << std::endl;
+    // std::cout << "Score 225: \n " << scores[5] << std::endl;
+    // std::cout << "Score 270: \n " << scores[6] << std::endl;
+    // std::cout << "Score 315: \n " << scores[7] << std::endl;
 
     int i = min_element(scores.begin(),scores.end()) - scores.begin();
     degree = i*45;
@@ -292,6 +319,7 @@ double get_icp_score(PointCloudT::Ptr src, PointCloudT::Ptr target){
     icp.setMaxCorrespondenceDistance(3);
     PointCloudT::Ptr cloud_final(new PointCloudT);
     icp.align(*cloud_final);
+    create_visualizer(std::string("Demo Visualizer"), target, src, cloud_final);
     return icp.getFitnessScore();
 }
 
@@ -300,9 +328,9 @@ Eigen::Matrix4d make_custom_rot_matrix(double degrees){
 
     // Create a rotation matrix around the x-axis
     Eigen::Matrix4d rotation_matrix;
-    rotation_matrix << 1, 0, 0, 1,
-                       0, cos(theta), -sin(theta), 1,
-                       0, sin(theta), cos(theta), 1,
+    rotation_matrix << cos(theta), -sin(theta), 0, 1,
+                       sin(theta), cos(theta), 0, 1,
+                       0, 0, 1, 1,
                        0, 0, 0, 1;
     return rotation_matrix;    
 }

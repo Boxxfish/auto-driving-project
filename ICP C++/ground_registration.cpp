@@ -50,6 +50,7 @@ std::tuple<Eigen::Vector3f, Eigen::Vector3f,pcl::PointCloud<pcl::PointXYZ>::Ptr>
         filtered_cloud = cloud;
     }
 
+
     Eigen::Vector3f unit_normal_vector(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
     unit_normal_vector.normalize();
 

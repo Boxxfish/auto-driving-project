@@ -8,8 +8,8 @@ using json = nlohmann::json;
 Dataset::Dataset(const std::string &path)
 {
   // Load poses
-  this->i_pose = read_poses("I_W.txt")[0];
-  auto const c_poses = read_poses("V_W.txt");
+  this->i_pose = read_poses(path + "I_W.txt")[0];
+  auto const c_poses = read_poses(path + "V_W.txt");
 
   // Load point clouds and store as frames
   for (int i = 0; i < 300; i++)
@@ -55,7 +55,7 @@ std::vector<Eigen::Matrix4d> read_poses(const std::string &path)
         std::getline(pose_file, line);
       }
     }
-    auto const pose = Eigen::Map<Eigen::Matrix<double, 4, 4>>(elems.data());
+    auto const pose = Eigen::Map<Eigen::Matrix4d>(elems.data());
     poses.push_back(pose.transpose());
   }
   pose_file.close();

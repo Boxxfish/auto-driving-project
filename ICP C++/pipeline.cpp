@@ -181,7 +181,7 @@ Eigen::Matrix4d align_icp(PointCloudT::Ptr src, PointCloudT::Ptr target, int ite
     icp.setMaxCorrespondenceDistance(max_corresp_dist);
     PointCloudT::Ptr cloud_final(new PointCloudT);
     icp.align(*cloud_final);
-    create_visualizer(std::string("Demo Visualizer"), target, src, cloud_final);
+    // create_visualizer(std::string("Demo Visualizer"), target, src, cloud_final);
     Eigen::Matrix4d transform = Eigen::Matrix4d(icp.getFinalTransformation().cast<double>());
     return transform;
 }

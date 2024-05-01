@@ -45,6 +45,7 @@ void print_metrics(Pipeline &pipeline, const Dataset &dataset)
 
     for (int i = 0; i < DS_SIZE; i++)
     {
+        std::cout << i << std::endl;
         // Run current frame through pipeline and time completion
         pcl::console::TicToc time;
         auto const c_pose_est = pipeline.guess_v_pose(dataset.frames[i], dataset.i_pose);

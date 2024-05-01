@@ -8,13 +8,13 @@ using json = nlohmann::json;
 Dataset::Dataset(const std::string &path)
 {
   // Load poses
-  this->i_pose = load_poses("I_W.txt")[0];
-  auto const c_poses = load_poses("V_W.txt");
+  this->i_pose = read_poses("I_W.txt")[0];
+  auto const c_poses = read_poses("V_W.txt");
 
   // Load point clouds and store as frames
   for (int i = 0; i < 300; i++)
   {
-    auto const splits_path_prefix = dataset->path + "splits/" + std::to_string(frame_num);
+    auto const splits_path_prefix = path + "splits/" + std::to_string(i);
     auto const cloud_i = load_pc(splits_path_prefix + "_i.pcd");
     auto const cloud_c = load_pc(splits_path_prefix + "_v.pcd");
     this->frames.push_back({

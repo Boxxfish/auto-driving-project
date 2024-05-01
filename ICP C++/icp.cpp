@@ -18,7 +18,6 @@ typedef pcl::PointCloud<PointT> PointCloudT;
 
 #include "visualizer.h"
 #include "dataset.h"
-#include "frame.h"
 
 bool next_iteration = false;
 
@@ -149,13 +148,13 @@ int main (int argc, char* argv[])
   Dataset dataset1_d1(path);
   std::cout << "Dataset Object Created." << std::endl;
   std::cout << "Infrastructure Pose:\n" << dataset1_d1.i_pose <<std::endl;
-  std::cout << "Car Pose:\n" << dataset1_d1.c_poses[data_num] << std::endl;
+  std::cout << "Car Pose:\n" << dataset1_d1.frames[data_num].pose_c << std::endl;
 
   std::cout << "Loading Frame" << std::endl;
-  Frame frame = dataset1_d1.getFrame(data_num);
+  Frame frame = dataset1_d1.frames[data_num];
   std::cout << "Frame Loaded" << std::endl;
   // frame.pose_i = frame.pose_i.transpose();
-  pcl::transformPointCloud (*frame.cloud_i, *frame.cloud_i, frame.pose_i);
+  pcl::transformPointCloud (*frame.cloud_i, *frame.cloud_i, dataset1_d1.i_pose);
   pcl::transformPointCloud (*frame.cloud_c, *frame.cloud_c, frame.pose_c);
 
   create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, frame.cloud_c);

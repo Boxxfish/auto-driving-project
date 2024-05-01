@@ -1,4 +1,5 @@
 
+#include <pcl/console/time.h> // TicToc
 #include "metrics.h"
 
 // Function to calculate and return RRE (degrees).
@@ -51,7 +52,7 @@ void print_metrics(Pipeline &pipeline, const Dataset &dataset)
 
         double rre = compute_rre(c_pose_est, dataset.frames[i].pose_c);
         double rte = compute_rte(c_pose_est, dataset.frames[i].pose_c);
-        if (std::find(easy_idxs.begin(), easy_idxs.end(), i) != easy_idxs.end())
+        if (std::find(dataset.easy_idxs.begin(), dataset.easy_idxs.end(), i) != dataset.easy_idxs.end())
         {
             easy_total_rte += rte;
             easy_total_rre += rre;

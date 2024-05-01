@@ -18,13 +18,9 @@ typedef pcl::PointCloud<PointT> PointCloudT;
 
 #include "visualizer.h"
 #include "dataset.h"
-#include "frame.h"
 #include "pipeline.h"
 #include "metrics.h"
 #include <pcl/console/time.h> // TicToc
-
-#include "json.hpp"
-using json = nlohmann::json;
 
 int main (int argc, char* argv[])
 {

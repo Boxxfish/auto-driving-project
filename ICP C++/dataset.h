@@ -7,9 +7,12 @@
 
 #include <string>
 #include <Eigen/Geometry> // Include this for additional Eigen functionalities
-#include "frame.h"
 
-class Frame;
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/registration/icp.h>
+typedef pcl::PointXYZ PointT;
+typedef pcl::PointCloud<PointT> PointCloudT;
 
 /// A frame of data.
 struct Frame
@@ -29,7 +32,7 @@ public:
     /// Infra ground truth pose.
     Eigen::Matrix4d i_pose;
     /// Frames in our dataset, should be of length 300.
-    std::vector<Frame>;
+    std::vector<Frame> frames;
     /// Indices corresponding to easy frames (overlap >= 50%).
     std::vector<int> easy_idxs;
     /// Indices corresponding to hard frames (overlap < 50%).

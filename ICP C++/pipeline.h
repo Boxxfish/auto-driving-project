@@ -8,7 +8,6 @@
 #include <pcl/registration/icp.h>
 #include <optional>
 #include <random>
-#include "frame.h"
 #include "dataset.h"
 
 // TODO: Replace this with our actual dataset stuff.
@@ -69,6 +68,6 @@ Eigen::Matrix3d create_rot_matrix(Eigen::Vector3f z, Eigen::Vector3f y);
 
 Eigen::Matrix4d get_gps_location(const Eigen::Matrix4d &src, double stddev);
 
-Eigen::Matrix4d location_interpolation(Frame &f1, Eigen::Matrix4d translation, Frame &fn);
+// Eigen::Matrix4d location_interpolation(Frame &f1, Eigen::Matrix4d translation, Frame &fn);
 
 #endif

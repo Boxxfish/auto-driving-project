@@ -46,6 +46,8 @@ std::tuple<Eigen::Vector3f, Eigen::Vector3f,pcl::PointCloud<pcl::PointXYZ>::Ptr>
         extract.setIndices(inliers);
         extract.setNegative(true); // Extract non-plane points
         extract.filter(*filtered_cloud);
+    }else{
+        filtered_cloud = cloud;
     }
 
     Eigen::Vector3f unit_normal_vector(coefficients->values[0], coefficients->values[1], coefficients->values[2]);

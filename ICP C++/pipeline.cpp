@@ -11,9 +11,13 @@
 #include "visualizer.h"
 #include <pcl/console/time.h> // TicToc
 
-Pipeline::Pipeline(Dataset& dataset){
-    this->dataset = dataset;
-}
+// Pipeline::Pipeline(){
+
+// }
+
+// Pipeline::Pipeline(Dataset &dataset){
+//     this->dataset = dataset;
+// }
 
 void StdPipeline::run(){
     for (int i = 0; i < dataset.c_poses.size()-1; i++){
@@ -35,7 +39,6 @@ void StdPipeline::run(){
 
 Eigen::Matrix4d StdPipeline::guess_v_pose(Frame &frame)
 {
-    // TODO: Set up the pipeline here.
 
     //fix infrastructure point cloud
     pcl::transformPointCloud (*frame.cloud_i, *frame.cloud_i, frame.pose_i);
@@ -94,16 +97,16 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(Frame &frame)
 }
 
 void SimplePipeline::run(){
-    for (int i = 0; i < dataset.c_poses.size()-1; i++){
-        Frame f1 = dataset.getFrame(i);
+    for (int i = 0; i < this->dataset.c_poses.size()-1; i++){
+        Frame f1 = this->dataset.getFrame(i);
         std::cout << "Frame Loaded " << i << std::endl;
         pcl::console::TicToc time;
 
         time.tic();
         Eigen::Matrix4d c = guess_v_pose(f1);
-        dataset.computation_time_list.insert(dataset.computation_time_list.end(),time.toc()); 
+        this->dataset.computation_time_list.insert(this->dataset.computation_time_list.end(),time.toc()); 
 
-        dataset.c_poses_corrected[i] = c;        
+        this->dataset.c_poses_corrected[i] = c;        
     }
 }
 

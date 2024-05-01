@@ -2,6 +2,10 @@
 #include <fstream>
 #include <iostream>
 
+Dataset::Dataset(){
+
+}
+
 Dataset::Dataset(std::string& path){
     this->path = path;
     load_i_pose();

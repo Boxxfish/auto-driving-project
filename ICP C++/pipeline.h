@@ -36,7 +36,9 @@ class Pipeline
 
     public:
         Dataset dataset;
-        Pipeline(Dataset& dataset); //constructor
+        Pipeline(Dataset &dataset){
+            this->dataset = dataset;
+        }
 
         //runs on the whole dataset
         virtual void run() = 0;
@@ -65,6 +67,8 @@ class SimplePipeline : public Pipeline
     public:
         Eigen::Matrix4d guess_v_pose(Frame &frame);
         void run();
+        SimplePipeline(Dataset &dataset): Pipeline(dataset){}
+
 };
 
 // only uses icp, uses ground truth rotation in initial guess

@@ -319,7 +319,7 @@ double get_icp_score(PointCloudT::Ptr src, PointCloudT::Ptr target){
     icp.setMaxCorrespondenceDistance(3);
     PointCloudT::Ptr cloud_final(new PointCloudT);
     icp.align(*cloud_final);
-    create_visualizer(std::string("Demo Visualizer"), target, src, cloud_final);
+    // create_visualizer(std::string("Demo Visualizer"), target, src, cloud_final);
     return icp.getFitnessScore();
 }
 

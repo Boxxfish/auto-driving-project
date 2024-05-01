@@ -51,7 +51,7 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(Frame &frame)
     bool remove_ground=true;
     //gets vectors and removes ground from car point cloud
     std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(c_temp, remove_ground);
-    c_temp = get<2>(vectors);
+    c_temp = std::get<2>(vectors);
 
 
 
@@ -151,7 +151,7 @@ Eigen::Matrix4d SimplePipeline::guess_v_pose(Frame &frame)
     bool remove_ground=true;
     //gets vectors and removes ground from car point cloud
     std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(c_temp, remove_ground);
-    c_temp = get<2>(vectors);
+    c_temp = std::get<2>(vectors);
 
     //icp
     Eigen::Matrix4d icp_pose = Pipeline::align_icp(c_temp, i_temp, 50); 
@@ -223,7 +223,7 @@ Eigen::Matrix4d InterpolationPipeline::guess_v_pose(Frame &frame){
     bool remove_ground=true;
     //gets vectors and removes ground from car point cloud
     std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(c_temp, remove_ground);
-    c_temp = get<2>(vectors);
+    c_temp = std::get<2>(vectors);
 
     //icp
     Eigen::Matrix4d icp_pose = Pipeline::align_icp(c_temp, i_temp, 50); 
@@ -248,7 +248,7 @@ Eigen::Matrix4d Pipeline::location_interpolation(Frame &f1, Eigen::Matrix4d tran
     bool remove_ground=true;
     //gets vectors and removes ground from car point cloud
     std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(fn.cloud_c, remove_ground);
-    fn.cloud_c = get<2>(vectors);
+    fn.cloud_c = std::get<2>(vectors);
 
 
     PointCloudT::Ptr cloud_c1 (new PointCloudT); 

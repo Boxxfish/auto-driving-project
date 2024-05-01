@@ -33,22 +33,26 @@ void StdPipeline::run(){
 Eigen::Matrix4d StdPipeline::guess_v_pose(Frame &frame)
 {
 
-    //fix infrastructure point cloud
     pcl::transformPointCloud (*frame.cloud_i, *frame.cloud_i, frame.pose_i);
-    frame.cloud_i = remove_ground_basic(frame.cloud_i);
+    PointCloudT::Ptr i_temp (new PointCloudT); 
+    *i_temp = *frame.cloud_i;
+    i_temp = remove_ground_basic(i_temp);
 
     //add noise
     // Eigen::Matrix4d pose;
     // pose(3,3) = 1;
     Eigen::Matrix4d pose = get_gps_location(frame.pose_c, 3);
     // std::cout << "Noise Added: \n" << pose << std::endl;
-    pcl::transformPointCloud (*frame.cloud_c, *frame.cloud_c, pose);
+
+    PointCloudT::Ptr c_temp (new PointCloudT); 
+    *c_temp = *frame.cloud_c;
 
     //ground align
     bool remove_ground=true;
     //gets vectors and removes ground from car point cloud
-    std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(frame.cloud_c, remove_ground);
-    frame.cloud_c = get<2>(vectors);
+    std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(c_temp, remove_ground);
+    c_temp = get<2>(vectors);
+
 
 
     // std::cout << "pose i: \n" << frame.pose_i << std::endl;
@@ -63,9 +67,6 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(Frame &frame)
     
     // diff.normalize();
     // std::cout << "diff: \n" << diff << std::endl;
-
-
-
 
     // Eigen::Matrix3d rot = create_rot_matrix(diff,get<1>(vectors));
     // pose(0,0) = rot(0,0);
@@ -82,11 +83,15 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(Frame &frame)
 
     // std::cout << "Rotation Guess Added: \n" << pose << std::endl;
 
+    pcl::transformPointCloud (*frame.cloud_c, *c_temp, pose);
+
+
+
     //icp
-    Eigen::Matrix4d icp_pose = Pipeline::align_icp(frame.cloud_c, frame.cloud_i, 150); 
+    Eigen::Matrix4d icp_pose = Pipeline::align_icp(c_temp, i_temp, 50); 
 
     // std::cout << "end of pipeline" << std::endl;
-    return icp_pose;
+    return icp_pose*pose;
 }
 
 void SimplePipeline::run(){
@@ -116,7 +121,9 @@ Eigen::Matrix4d SimplePipeline::guess_v_pose(Frame &frame)
 
     //fix infrastructure point cloud
     pcl::transformPointCloud (*frame.cloud_i, *frame.cloud_i, frame.pose_i);
-    frame.cloud_i = remove_ground_basic(frame.cloud_i);
+    PointCloudT::Ptr i_temp (new PointCloudT); 
+    *i_temp = *frame.cloud_i;
+    i_temp = remove_ground_basic(i_temp);
 
     //add noise
     // Eigen::Matrix4d pose;
@@ -136,19 +143,21 @@ Eigen::Matrix4d SimplePipeline::guess_v_pose(Frame &frame)
     pose(2,1) = frame.pose_c(2,1);
     pose(2,2) = frame.pose_c(2,2);
 
-    pcl::transformPointCloud (*frame.cloud_c, *frame.cloud_c, pose);
+    PointCloudT::Ptr c_temp (new PointCloudT); 
+    pcl::transformPointCloud (*frame.cloud_c, *c_temp, pose);
+
 
     //ground align
     bool remove_ground=true;
     //gets vectors and removes ground from car point cloud
-    std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(frame.cloud_c, remove_ground);
-    frame.cloud_c = get<2>(vectors);
+    std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(c_temp, remove_ground);
+    c_temp = get<2>(vectors);
 
     //icp
-    Eigen::Matrix4d icp_pose = Pipeline::align_icp(frame.cloud_c, frame.cloud_i, 50); 
+    Eigen::Matrix4d icp_pose = Pipeline::align_icp(c_temp, i_temp, 50); 
 
     // std::cout << "end of pipeline" << std::endl;
-    return icp_pose;
+    return icp_pose*pose;
 }
 
 void InterpolationPipeline::run(){
@@ -182,60 +191,45 @@ void InterpolationPipeline::run(){
 }
 
 Eigen::Matrix4d InterpolationPipeline::guess_v_pose(Frame &frame){
-        //fix infrastructure point cloud
+    //fix infrastructure point cloud
     pcl::transformPointCloud (*frame.cloud_i, *frame.cloud_i, frame.pose_i);
-    frame.cloud_i = remove_ground_basic(frame.cloud_i);
+    PointCloudT::Ptr i_temp (new PointCloudT); 
+    *i_temp = *frame.cloud_i;
+    i_temp = remove_ground_basic(i_temp);
 
     //add noise
     // Eigen::Matrix4d pose;
     // pose(3,3) = 1;
     Eigen::Matrix4d pose = get_gps_location(frame.pose_c, 3);
     // std::cout << "Noise Added: \n" << pose << std::endl;
-    pcl::transformPointCloud (*frame.cloud_c, *frame.cloud_c, pose);
+
+    pose(0,0) = frame.pose_c(0,0);
+    pose(0,1) = frame.pose_c(0,1);
+    pose(0,2) = frame.pose_c(0,2);
+
+    pose(1,0) = frame.pose_c(1,0);
+    pose(1,1) = frame.pose_c(1,1);
+    pose(1,2) = frame.pose_c(1,2);
+
+    pose(2,0) = frame.pose_c(2,0);
+    pose(2,1) = frame.pose_c(2,1);
+    pose(2,2) = frame.pose_c(2,2);
+
+    PointCloudT::Ptr c_temp (new PointCloudT); 
+    pcl::transformPointCloud (*frame.cloud_c, *c_temp, pose);
+
 
     //ground align
     bool remove_ground=true;
     //gets vectors and removes ground from car point cloud
-    std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(frame.cloud_c, remove_ground);
-    frame.cloud_c = get<2>(vectors);
-
-
-    // std::cout << "pose i: \n" << frame.pose_i << std::endl;
-    // std::cout << "pose c: \n" << pose << std::endl;
-
-
-    // Eigen::Vector3f diff;
-    // diff(0) =  ((float)frame.pose_i(0,3) - (float)pose(0,3));
-    // diff(1) = ((float)frame.pose_i(1,3) - (float)pose(1,3));
-    // diff(2) = 0;
-    // std::cout << "diff: \n" << diff << std::endl;
-    
-    // diff.normalize();
-    // std::cout << "diff: \n" << diff << std::endl;
-
-
-
-
-    // Eigen::Matrix3d rot = create_rot_matrix(diff,get<1>(vectors));
-    // pose(0,0) = rot(0,0);
-    // pose(0,1) = rot(0,1);
-    // pose(0,2) = rot(0,2);
-
-    // pose(1,0) = rot(1,0);
-    // pose(1,1) = rot(1,1);
-    // pose(1,2) = rot(1,2);
-
-    // pose(2,0) = rot(2,0);
-    // pose(2,1) = rot(2,1);
-    // pose(2,2) = rot(2,2);
-
-    // std::cout << "Rotation Guess Added: \n" << pose << std::endl;
+    std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(c_temp, remove_ground);
+    c_temp = get<2>(vectors);
 
     //icp
-    Eigen::Matrix4d icp_pose = Pipeline::align_icp(frame.cloud_c, frame.cloud_i, 150); 
+    Eigen::Matrix4d icp_pose = Pipeline::align_icp(c_temp, i_temp, 50); 
 
     // std::cout << "end of pipeline" << std::endl;
-    return icp_pose;
+    return icp_pose*pose;
 }
 
 Eigen::Matrix4d Pipeline::location_interpolation(Frame &f1, Eigen::Matrix4d translation, Frame &fn){

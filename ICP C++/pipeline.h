@@ -45,7 +45,7 @@ public:
     std::optional<Eigen::Matrix4d> T_previous;
     std::optional<Eigen::Vector3d> i_gps;
     int incoming_threshold = 200;
-    int outgoing_threshold = 100;
+    int outgoing_threshold = 200;
     bool remove_ground;
     int num_rots;
 

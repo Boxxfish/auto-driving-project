@@ -25,7 +25,7 @@ public:
 
     /// Given a frame, returns where it thinks the vehicle is.
     /// This method is run on every frame in order.
-    virtual Eigen::Matrix4d guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose) = 0;
+    virtual std::optional<Eigen::Matrix4d> guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose) = 0;
 };
 
 /// Our proposed pipeline.
@@ -33,9 +33,19 @@ public:
 /// Prior guesses are used as a starting point for future guesses.
 class StdPipeline : public Pipeline
 {
+protected:
+    Eigen::Matrix4d get_initial_T(const Frame &frame, const Eigen::Matrix4d &i_pose);
+    Eigen::Matrix4d get_interpolation_T(const Frame &frame, const Eigen::Matrix4d &i_pose);
+
 public:
     StdPipeline() : Pipeline() {}
-    Eigen::Matrix4d guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose);
+    std::optional<Eigen::Matrix4d> T_previous;
+    std::optional<Eigen::Vector3d> i_gps;
+    int incoming_threshold = 100;
+    int outgoing_threshold = 100;
+
+    std::optional<Eigen::Matrix4d> guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose);
+
 };
 
 // only uses icp, uses ground truth rotation in initial guess
@@ -44,7 +54,7 @@ class SimplePipeline : public Pipeline
 {
 public:
     SimplePipeline() : Pipeline() {}
-    Eigen::Matrix4d guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose);
+    std::optional<Eigen::Matrix4d> guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose);
 };
 
 // only uses icp, uses ground truth rotation in initial guess
@@ -53,7 +63,7 @@ class InterpolationPipeline : public Pipeline
 {
 public:
     InterpolationPipeline() : Pipeline() {}
-    Eigen::Matrix4d guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose);
+    std::optional<Eigen::Matrix4d> guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose);
 };
 
 /// Given a source and target point cloud, returns a matrix that aligns the source to the target.

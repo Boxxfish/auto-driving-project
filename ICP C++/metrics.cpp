@@ -60,21 +60,28 @@ void print_metrics(Pipeline &pipeline, const Dataset &dataset)
         }
         std::cout << std::endl;
 
-        Eigen::Matrix4d c_pose_est = last_guess;
+        std::optional<Eigen::Matrix4d> c_pose_temp;
+        
+
         double elapsed_ms = 0.0;
         if (!skip)
         {
             // Run current frame through pipeline and time completion
             pcl::console::TicToc time;
             time.tic();
-            c_pose_est = pipeline.guess_v_pose(dataset.frames[i], dataset.i_pose);
+            c_pose_temp = pipeline.guess_v_pose(dataset.frames[i], dataset.i_pose);
             elapsed_ms = time.toc();
 
             // Check how many frames we have to skip
             std::cout << elapsed_ms << std::endl;
             frames_to_skip = int((elapsed_ms / 1000.0) * FRAMES_PER_SECOND);
             std::cout << frames_to_skip << std::endl;
-            last_guess = c_pose_est;
+            
+        }
+        Eigen::Matrix4d c_pose_est = last_guess;
+        if (c_pose_temp.has_value()){
+            last_guess = *c_pose_temp;
+            c_pose_est = *c_pose_temp;
         }
 
         // Compute metrics

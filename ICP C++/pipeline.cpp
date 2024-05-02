@@ -15,31 +15,65 @@
 /// Aligns 2 axes with the ground plane, then applies ground removal and performs ICP alignment.
 /// Prior guesses are used as a starting point for future guesses.
 
-Eigen::Matrix4d StdPipeline::guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose)
+std::optional<Eigen::Matrix4d> StdPipeline::guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose)
 {
+    if (!(i_gps.has_value())){
+        Eigen::Vector3d gps;
+        gps << i_pose(0,3),
+        i_pose(1,3),
+        i_pose(2,3);
 
+        i_gps = gps;
+    }
+
+    Eigen::Matrix4d c_pose = get_gps_location(frame.pose_c, 3);
+    Eigen::Vector3d c_gps;
+    c_gps << c_pose(0,3),
+    c_pose(1,3),
+    c_pose(2,3);
+    
+    double distance = (*i_gps - c_gps).norm();
+
+    if (T_previous.has_value()){
+        if (distance < outgoing_threshold){
+            // auto T_previous = get_interpolation_T(frame, i_pose);
+            auto T_previous = get_initial_T(frame, i_pose);
+
+            return T_previous;
+        }else{
+            return std::nullopt;
+        }
+    }else{
+        if (distance < incoming_threshold){
+            auto T_previous = get_initial_T(frame, i_pose);
+            return T_previous;
+        }else{
+            return std::nullopt;
+        }
+    }
+}
+
+Eigen::Matrix4d StdPipeline::get_initial_T(const Frame &frame, const Eigen::Matrix4d &i_pose){
+    //create temp i
     pcl::transformPointCloud(*frame.cloud_i, *frame.cloud_i, i_pose);
     PointCloudT::Ptr i_temp(new PointCloudT);
     *i_temp = *frame.cloud_i;
-    i_temp = remove_ground_basic(i_temp);
 
-    Eigen::Matrix4d pose = get_gps_location(frame.pose_c, 3);
-
+    // create temp c   
     PointCloudT::Ptr c_temp(new PointCloudT);
     *c_temp = *frame.cloud_c;
 
-    // ground align
+    // ground removoal for temp i
+    i_temp = remove_ground_basic(i_temp);
+
+    // ground align and removal for temp c
     bool remove_ground = true;
     // gets vectors and removes ground from car point cloud
     std::tuple<Eigen::Vector3f, Eigen::Vector3f, PointCloudT::Ptr> vectors = getVectors(c_temp, remove_ground);
     *c_temp = *std::get<2>(vectors);
 
-    // angle guess
-    // create_visualizer(std::string("Demo Visualizer"), i_temp, c_temp, c_temp);
-
-    // get_icp_score(c_temp,i_temp);
-
-
+    // initial pose guess
+    Eigen::Matrix4d pose = get_gps_location(frame.pose_c, 3);
     auto rot = get_best_rotation(c_temp, i_temp, pose);
 
     pose(0, 0) = rot(0, 0);
@@ -60,17 +94,16 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(const Frame &frame, const Eigen::Matri
     Eigen::Matrix4d icp_pose = align_icp(c_temp, i_temp, 50);
     Eigen::Matrix4d result = icp_pose * pose;
     
+    //for testing so we can see the result
     PointCloudT::Ptr cloud_c_new(new PointCloudT);
     pcl::transformPointCloud(*frame.cloud_c, *cloud_c_new, result);
+    create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new);
 
-    // create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new);
-
-    // std::cout << "end of pipeline" << std::endl;
     return result;
 }
 
 // keeps rotation estiates from ground truth
-Eigen::Matrix4d SimplePipeline::guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose)
+std::optional<Eigen::Matrix4d>  SimplePipeline::guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose)
 {
 
     // fix infrastructure point cloud
@@ -113,7 +146,7 @@ Eigen::Matrix4d SimplePipeline::guess_v_pose(const Frame &frame, const Eigen::Ma
     return icp_pose * pose;
 }
 
-Eigen::Matrix4d InterpolationPipeline::guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose)
+std::optional<Eigen::Matrix4d>  InterpolationPipeline::guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose)
 {
     // fix infrastructure point cloud
     pcl::transformPointCloud(*frame.cloud_i, *frame.cloud_i, i_pose);

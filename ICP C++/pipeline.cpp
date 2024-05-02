@@ -63,7 +63,7 @@ Eigen::Matrix4d StdPipeline::guess_v_pose(const Frame &frame, const Eigen::Matri
     PointCloudT::Ptr cloud_c_new(new PointCloudT);
     pcl::transformPointCloud(*frame.cloud_c, *cloud_c_new, result);
 
-    create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new);
+    // create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new);
 
     // std::cout << "end of pipeline" << std::endl;
     return result;

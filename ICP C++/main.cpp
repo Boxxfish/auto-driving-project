@@ -39,6 +39,12 @@ int main(int argc, char *argv[])
     // create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new);
 
     // METRICS
+    std::string path = "../../data/Dataset_1/D2/";
     StdPipeline pipeline(true);
-    print_metrics_all(pipeline);
+
+    Dataset dataset(path);
+    print_metrics(pipeline, dataset);
+
+
+    // print_metrics_all(pipeline);
 }

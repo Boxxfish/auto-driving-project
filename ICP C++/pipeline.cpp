@@ -64,11 +64,13 @@ Eigen::Matrix4d StdPipeline::get_initial_T(const Frame &frame, const Eigen::Matr
     // ground removoal for temp i
     if (remove_ground) {
         i_temp = remove_ground_basic(i_temp);
+        
+        // gets vectors and removes ground from car point cloud
+        std::tuple<Eigen::Vector3f, Eigen::Vector3f, PointCloudT::Ptr> vectors = getVectors(c_temp, remove_ground);
+        *c_temp = *std::get<2>(vectors);
     }
 
-    // gets vectors and removes ground from car point cloud
-    std::tuple<Eigen::Vector3f, Eigen::Vector3f, PointCloudT::Ptr> vectors = getVectors(c_temp, remove_ground);
-    *c_temp = *std::get<2>(vectors);
+
 
     // initial pose guess
     Eigen::Matrix4d pose = get_gps_location(frame.pose_c, 3);

@@ -43,8 +43,8 @@ public:
     }
     std::optional<Eigen::Matrix4d> T_previous;
     std::optional<Eigen::Vector3d> i_gps;
-    int incoming_threshold = 100;
-    int outgoing_threshold = 100;
+    int incoming_threshold = 200;
+    int outgoing_threshold = 200;
     bool remove_ground;
 
     std::optional<Eigen::Matrix4d> guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose);

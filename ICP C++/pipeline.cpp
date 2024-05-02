@@ -36,16 +36,14 @@ std::optional<Eigen::Matrix4d> StdPipeline::guess_v_pose(const Frame &frame, con
 
     if (T_previous.has_value()){
         if (distance < outgoing_threshold){
-            // auto T_previous = get_interpolation_T(frame, i_pose);
-            auto T_previous = get_initial_T(frame, i_pose);
-
+            T_previous = get_interpolation_T(frame, i_pose);
             return T_previous;
         }else{
             return std::nullopt;
         }
     }else{
         if (distance < incoming_threshold){
-            auto T_previous = get_initial_T(frame, i_pose);
+            T_previous = get_initial_T(frame, i_pose);
             return T_previous;
         }else{
             return std::nullopt;
@@ -91,13 +89,44 @@ Eigen::Matrix4d StdPipeline::get_initial_T(const Frame &frame, const Eigen::Matr
     pcl::transformPointCloud(*c_temp, *c_temp, pose);
 
     // icp
-    Eigen::Matrix4d icp_pose = align_icp(c_temp, i_temp, 50);
+    Eigen::Matrix4d icp_pose = align_icp(c_temp, i_temp, 10);
     Eigen::Matrix4d result = icp_pose * pose;
     
-    //for testing so we can see the result
-    PointCloudT::Ptr cloud_c_new(new PointCloudT);
-    pcl::transformPointCloud(*frame.cloud_c, *cloud_c_new, result);
-    create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new);
+    // //for testing so we can see the result
+    // PointCloudT::Ptr cloud_c_new(new PointCloudT);
+    // pcl::transformPointCloud(*frame.cloud_c, *cloud_c_new, result);
+    // create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new);
+
+    return result;
+}
+
+Eigen::Matrix4d StdPipeline::get_interpolation_T(const Frame &frame, const Eigen::Matrix4d &i_pose){
+    //create temp i
+    pcl::transformPointCloud(*frame.cloud_i, *frame.cloud_i, i_pose);
+    PointCloudT::Ptr i_temp(new PointCloudT);
+    *i_temp = *frame.cloud_i;
+
+    // create temp c   
+    PointCloudT::Ptr c_temp(new PointCloudT);
+    *c_temp = *frame.cloud_c;
+
+    // ground removoal for temp i
+    i_temp = remove_ground_basic(i_temp);
+
+    // ground align and removal for temp c
+    bool remove_ground = true;
+    // gets vectors and removes ground from car point cloud
+    std::tuple<Eigen::Vector3f, Eigen::Vector3f, PointCloudT::Ptr> vectors = getVectors(c_temp, remove_ground);
+    *c_temp = *std::get<2>(vectors);
+
+    pcl::transformPointCloud(*c_temp, *c_temp, *T_previous);
+    Eigen::Matrix4d icp_pose = align_icp(c_temp, i_temp, 10);
+    Eigen::Matrix4d result = icp_pose * (*T_previous);
+
+    // //for testing so we can see the result
+    // PointCloudT::Ptr cloud_c_new(new PointCloudT);
+    // pcl::transformPointCloud(*frame.cloud_c, *cloud_c_new, result);
+    // create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new);
 
     return result;
 }

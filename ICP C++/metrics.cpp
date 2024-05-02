@@ -73,9 +73,7 @@ void print_metrics(Pipeline &pipeline, const Dataset &dataset)
             elapsed_ms = time.toc();
 
             // Check how many frames we have to skip
-            std::cout << elapsed_ms << std::endl;
             frames_to_skip = int((elapsed_ms / 1000.0) * FRAMES_PER_SECOND);
-            std::cout << frames_to_skip << std::endl;
             
         }
         Eigen::Matrix4d c_pose_est = last_guess;

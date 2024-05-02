@@ -29,13 +29,6 @@ int main(int argc, char *argv[])
     //  For reproducability
     srand(100);
 
-    std::string path = "../../data/Dataset_1/D1/";
-
-    Dataset dataset(path);
-
-    std::cout << "Dataset Loaded from " << path << std::endl;
-    std::cout << "Dataset Size: " << dataset.frames.size() << std::endl;
-
     // // SINGLE FRAME RUN FOR TESTING
     // SimplePipeline pipeline;
     // Frame frame = dataset1_d1.getFrame(69);
@@ -47,5 +40,5 @@ int main(int argc, char *argv[])
 
     // METRICS
     StdPipeline pipeline;
-    print_metrics(pipeline, dataset);
+    print_metrics_all(pipeline);
 }

@@ -14,4 +14,7 @@ double compute_rte(const Eigen::Matrix4d &current_transformation, const Eigen::M
 /// Given a pipeline and a dataset, runs the pipeline on the dataset and collects metrics.
 void print_metrics(Pipeline &pipeline, const Dataset& dataset);
 
+/// Given a pipeline, runs the pipeline on all datasets and collects metrics.
+void print_metrics_all(Pipeline &pipeline);
+
 #endif

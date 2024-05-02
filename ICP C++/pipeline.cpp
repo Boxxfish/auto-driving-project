@@ -36,14 +36,14 @@ std::optional<Eigen::Matrix4d> StdPipeline::guess_v_pose(const Frame &frame, con
 
     if (T_previous.has_value()){
         if (distance < outgoing_threshold){
-            T_previous = get_interpolation_T(frame, i_pose);
+            T_previous = get_interpolation_T(frame, i_pose, this->remove_ground);
             return T_previous;
         }else{
             return std::nullopt;
         }
     }else{
         if (distance < incoming_threshold){
-            T_previous = get_initial_T(frame, i_pose);
+            T_previous = get_initial_T(frame, i_pose, this->remove_ground);
             return T_previous;
         }else{
             return std::nullopt;
@@ -51,7 +51,7 @@ std::optional<Eigen::Matrix4d> StdPipeline::guess_v_pose(const Frame &frame, con
     }
 }
 
-Eigen::Matrix4d StdPipeline::get_initial_T(const Frame &frame, const Eigen::Matrix4d &i_pose){
+Eigen::Matrix4d StdPipeline::get_initial_T(const Frame &frame, const Eigen::Matrix4d &i_pose, bool remove_ground){
     //create temp i
     pcl::transformPointCloud(*frame.cloud_i, *frame.cloud_i, i_pose);
     PointCloudT::Ptr i_temp(new PointCloudT);
@@ -62,10 +62,10 @@ Eigen::Matrix4d StdPipeline::get_initial_T(const Frame &frame, const Eigen::Matr
     *c_temp = *frame.cloud_c;
 
     // ground removoal for temp i
-    i_temp = remove_ground_basic(i_temp);
+    if (remove_ground) {
+        i_temp = remove_ground_basic(i_temp);
+    }
 
-    // ground align and removal for temp c
-    bool remove_ground = true;
     // gets vectors and removes ground from car point cloud
     std::tuple<Eigen::Vector3f, Eigen::Vector3f, PointCloudT::Ptr> vectors = getVectors(c_temp, remove_ground);
     *c_temp = *std::get<2>(vectors);
@@ -100,7 +100,7 @@ Eigen::Matrix4d StdPipeline::get_initial_T(const Frame &frame, const Eigen::Matr
     return result;
 }
 
-Eigen::Matrix4d StdPipeline::get_interpolation_T(const Frame &frame, const Eigen::Matrix4d &i_pose){
+Eigen::Matrix4d StdPipeline::get_interpolation_T(const Frame &frame, const Eigen::Matrix4d &i_pose, bool remove_ground){
     //create temp i
     pcl::transformPointCloud(*frame.cloud_i, *frame.cloud_i, i_pose);
     PointCloudT::Ptr i_temp(new PointCloudT);
@@ -111,10 +111,10 @@ Eigen::Matrix4d StdPipeline::get_interpolation_T(const Frame &frame, const Eigen
     *c_temp = *frame.cloud_c;
 
     // ground removoal for temp i
-    i_temp = remove_ground_basic(i_temp);
+    if (remove_ground) {
+        i_temp = remove_ground_basic(i_temp);
+    }
 
-    // ground align and removal for temp c
-    bool remove_ground = true;
     // gets vectors and removes ground from car point cloud
     std::tuple<Eigen::Vector3f, Eigen::Vector3f, PointCloudT::Ptr> vectors = getVectors(c_temp, remove_ground);
     *c_temp = *std::get<2>(vectors);

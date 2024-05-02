@@ -131,6 +131,8 @@ void print_metrics_all(Pipeline &pipeline)
     double hard_total_rre = 0.0;
     int easy_total = 0;
     int hard_total = 0;
+    int easy_total_computed = 0;
+    int hard_total_computed = 0;
     int easy_success = 0;
     int hard_success = 0;
     double easy_time = 0.0;
@@ -198,7 +200,10 @@ void print_metrics_all(Pipeline &pipeline)
                     {
                         easy_success += 1;
                     }
-                    easy_time += elapsed_ms;
+                    if (!skip) {
+                        easy_time += elapsed_ms;
+                        easy_total_computed += 1;
+                    }
                     easy_total += 1;
                 }
                 else
@@ -208,6 +213,10 @@ void print_metrics_all(Pipeline &pipeline)
                     if (rte <= SUCCESS_RTE)
                     {
                         hard_success += 1;
+                    }
+                    if (!skip) {
+                        hard_time += elapsed_ms;
+                        hard_total_computed += 1;
                     }
                     hard_time += elapsed_ms;
                     hard_total += 1;
@@ -219,9 +228,11 @@ void print_metrics_all(Pipeline &pipeline)
     std::cout << "Avg. RTE (Easy): " << (float)easy_total_rte / (float)easy_total << std::endl;
     std::cout << "Avg. RRE (Easy): " << (float)easy_total_rre / (float)easy_total << std::endl;
     std::cout << "Success Rate (Easy): " << (float)easy_success / (float)easy_total << std::endl;
-    std::cout << "Avg. Time (Easy): " << (float)easy_time / (float)easy_total << std::endl;
+    std::cout << "Avg. Time (Easy): " << (float)easy_time / (float)easy_total_computed << std::endl;
+    std::cout << "Computed % (Easy): " << (float)easy_total_computed / (float)easy_total << std::endl;
     std::cout << "Avg. RTE (Hard): " << (float)hard_total_rte / (float)hard_total << std::endl;
     std::cout << "Avg. RRE (Hard): " << (float)hard_total_rre / (float)hard_total << std::endl;
     std::cout << "Success Rate (Hard): " << (float)hard_success / (float)hard_total << std::endl;
-    std::cout << "Avg. Time (Hard): " << (float)hard_time / (float)hard_total << std::endl;
+    std::cout << "Avg. Time (Hard): " << (float)hard_time / (float)hard_total_computed << std::endl;
+    std::cout << "Computed % (Hard): " << (float)hard_total_computed / (float)hard_total << std::endl;
 }

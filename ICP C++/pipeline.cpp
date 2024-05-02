@@ -147,7 +147,7 @@ Eigen::Matrix4d StdPipeline::get_interpolation_T(const Frame &frame, const Eigen
     return result;
 }
 
-// keeps rotation estiates from ground truth
+// only icp
 std::optional<Eigen::Matrix4d> SimplePipeline::guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose)
 {
 
@@ -178,6 +178,8 @@ std::optional<Eigen::Matrix4d> SimplePipeline::guess_v_pose(const Frame &frame, 
     PointCloudT::Ptr c_temp(new PointCloudT);
     pcl::transformPointCloud(*frame.cloud_c, *c_temp, pose);
 
+
+
     // ground align
     bool remove_ground = true;
     // gets vectors and removes ground from car point cloud
@@ -186,6 +188,59 @@ std::optional<Eigen::Matrix4d> SimplePipeline::guess_v_pose(const Frame &frame, 
 
     // icp
     Eigen::Matrix4d icp_pose = align_icp(c_temp, i_temp, 50);
+
+
+    Eigen::Matrix4d result = icp_pose * pose;
+    // //for testing so we can see the result
+    // PointCloudT::Ptr cloud_c_new(new PointCloudT);
+    // pcl::transformPointCloud(*frame.cloud_c, *cloud_c_new, result);
+    // create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new);
+
+
+    // std::cout << "end of pipeline" << std::endl;
+    return icp_pose * pose;
+}
+
+// keeps rotation estiates from ground truth
+std::optional<Eigen::Matrix4d> NoRotPipeline::guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose)
+{
+
+    // fix infrastructure point cloud
+    pcl::transformPointCloud(*frame.cloud_i, *frame.cloud_i, i_pose);
+    PointCloudT::Ptr i_temp(new PointCloudT);
+    *i_temp = *frame.cloud_i;
+    i_temp = remove_ground_basic(i_temp);
+
+    // add noise    
+    Eigen::Matrix4d pose = get_gps_location(frame.pose_c, 3);
+    pose(3,3) = 1;
+    pose(0, 0) = frame.pose_c(0, 0);
+    pose(0, 1) = frame.pose_c(0, 1);
+    pose(0, 2) = frame.pose_c(0, 2);
+    pose(1, 0) = frame.pose_c(1, 0);
+    pose(1, 1) = frame.pose_c(1, 1);
+    pose(1, 2) = frame.pose_c(1, 2);
+    pose(2, 0) = frame.pose_c(2, 0);
+    pose(2, 1) = frame.pose_c(2, 1);
+    pose(2, 2) = frame.pose_c(2, 2);
+
+    PointCloudT::Ptr c_temp(new PointCloudT);
+    pcl::transformPointCloud(*frame.cloud_c, *c_temp, pose);
+
+    // ground align
+    bool remove_ground = true;
+    //gets vectors and removes ground from car point cloud
+    std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(c_temp, remove_ground);
+    c_temp = std::get<2>(vectors);
+
+    // icp
+    Eigen::Matrix4d icp_pose = align_icp(c_temp, i_temp, 10);
+
+    Eigen::Matrix4d result = icp_pose * pose;
+    // //for testing so we can see the result
+    // PointCloudT::Ptr cloud_c_new(new PointCloudT);
+    // pcl::transformPointCloud(*frame.cloud_c, *cloud_c_new, result);
+    // create_visualizer(std::string("Demo Visualizer"), frame.cloud_i, frame.cloud_c, cloud_c_new);
 
     // std::cout << "end of pipeline" << std::endl;
     return icp_pose * pose;

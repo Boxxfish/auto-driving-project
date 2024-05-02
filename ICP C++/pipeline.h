@@ -53,12 +53,21 @@ public:
 
 };
 
-// only uses icp, uses ground truth rotation in initial guess
+// only uses icp
 // still does ground removal
 class SimplePipeline : public Pipeline
 {
 public:
     SimplePipeline() : Pipeline() {}
+    std::optional<Eigen::Matrix4d> guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose);
+};
+
+// only uses icp, uses ground truth rotation in initial guess
+// still does ground removal
+class NoRotPipeline : public Pipeline
+{
+public:
+    NoRotPipeline() : Pipeline() {}
     std::optional<Eigen::Matrix4d> guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose);
 };
 

@@ -38,14 +38,16 @@ protected:
     Eigen::Matrix4d get_interpolation_T(const Frame &frame, const Eigen::Matrix4d &i_pose, bool remove_ground);
 
 public:
-    StdPipeline(bool remove_ground) : Pipeline() {
+    StdPipeline(bool remove_ground, int num_rots) : Pipeline() {
         this->remove_ground = remove_ground;
+        this->num_rots = num_rots;
     }
     std::optional<Eigen::Matrix4d> T_previous;
     std::optional<Eigen::Vector3d> i_gps;
-    int incoming_threshold = 100;
+    int incoming_threshold = 200;
     int outgoing_threshold = 100;
     bool remove_ground;
+    int num_rots;
 
     std::optional<Eigen::Matrix4d> guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose);
 
@@ -82,7 +84,7 @@ Eigen::Matrix3d create_rot_matrix(Eigen::Vector3f z, Eigen::Vector3f y);
 Eigen::Matrix4d get_gps_location(const Eigen::Matrix4d &src, double stddev);
 
 // Eigen::Matrix4d location_interpolation(Frame &f1, Eigen::Matrix4d translation, Frame &fn);
-Eigen::Matrix4d get_best_rotation(PointCloudT::Ptr src, PointCloudT::Ptr target,Eigen::Matrix4d translate);
+Eigen::Matrix4d get_best_rotation(PointCloudT::Ptr src, PointCloudT::Ptr target,Eigen::Matrix4d translate, int num_rots);
 double get_icp_score(PointCloudT::Ptr src, PointCloudT::Ptr target);
 Eigen::Matrix4d make_custom_rot_matrix(double degrees);
 

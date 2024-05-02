@@ -17,52 +17,64 @@
 
 std::optional<Eigen::Matrix4d> StdPipeline::guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose)
 {
-    if (!(i_gps.has_value())){
+    if (!(i_gps.has_value()))
+    {
         Eigen::Vector3d gps;
-        gps << i_pose(0,3),
-        i_pose(1,3),
-        i_pose(2,3);
+        gps << i_pose(0, 3),
+            i_pose(1, 3),
+            i_pose(2, 3);
 
         i_gps = gps;
     }
 
     Eigen::Matrix4d c_pose = get_gps_location(frame.pose_c, 3);
     Eigen::Vector3d c_gps;
-    c_gps << c_pose(0,3),
-    c_pose(1,3),
-    c_pose(2,3);
-    
+    c_gps << c_pose(0, 3),
+        c_pose(1, 3),
+        c_pose(2, 3);
+
     double distance = (*i_gps - c_gps).norm();
 
-    if (T_previous.has_value()){
-        if (distance < outgoing_threshold){
+    if (T_previous.has_value())
+    {
+        if (distance < outgoing_threshold)
+        {
             T_previous = get_interpolation_T(frame, i_pose, this->remove_ground);
             return T_previous;
-        }else{
+        }
+        else
+        {
             return std::nullopt;
         }
-    }else{
-        if (distance < incoming_threshold){
+    }
+    else
+    {
+        if (distance < incoming_threshold)
+        {
             T_previous = get_initial_T(frame, i_pose, this->remove_ground);
             return T_previous;
-        }else{
+        }
+        else
+        {
             return std::nullopt;
         }
     }
 }
 
-Eigen::Matrix4d StdPipeline::get_initial_T(const Frame &frame, const Eigen::Matrix4d &i_pose, bool remove_ground){
-    //create temp i
+Eigen::Matrix4d StdPipeline::get_initial_T(const Frame &frame, const Eigen::Matrix4d &i_pose, bool remove_ground)
+{
+    // create temp i
     pcl::transformPointCloud(*frame.cloud_i, *frame.cloud_i, i_pose);
     PointCloudT::Ptr i_temp(new PointCloudT);
     *i_temp = *frame.cloud_i;
 
-    // create temp c   
+    // create temp c
     PointCloudT::Ptr c_temp(new PointCloudT);
     *c_temp = *frame.cloud_c;
 
     // ground removoal for temp i
-    if (remove_ground) {
+    if (remove_ground)
+    {
         i_temp = remove_ground_basic(i_temp);
     }
 
@@ -72,7 +84,7 @@ Eigen::Matrix4d StdPipeline::get_initial_T(const Frame &frame, const Eigen::Matr
 
     // initial pose guess
     Eigen::Matrix4d pose = get_gps_location(frame.pose_c, 3);
-    auto rot = get_best_rotation(c_temp, i_temp, pose);
+    auto rot = get_best_rotation(c_temp, i_temp, pose, this->num_rots);
 
     pose(0, 0) = rot(0, 0);
     pose(0, 1) = rot(0, 1);
@@ -89,9 +101,9 @@ Eigen::Matrix4d StdPipeline::get_initial_T(const Frame &frame, const Eigen::Matr
     pcl::transformPointCloud(*c_temp, *c_temp, pose);
 
     // icp
-    Eigen::Matrix4d icp_pose = align_icp(c_temp, i_temp, 10);
+    Eigen::Matrix4d icp_pose = align_icp(c_temp, i_temp, 50);
     Eigen::Matrix4d result = icp_pose * pose;
-    
+
     // //for testing so we can see the result
     // PointCloudT::Ptr cloud_c_new(new PointCloudT);
     // pcl::transformPointCloud(*frame.cloud_c, *cloud_c_new, result);
@@ -100,18 +112,20 @@ Eigen::Matrix4d StdPipeline::get_initial_T(const Frame &frame, const Eigen::Matr
     return result;
 }
 
-Eigen::Matrix4d StdPipeline::get_interpolation_T(const Frame &frame, const Eigen::Matrix4d &i_pose, bool remove_ground){
-    //create temp i
+Eigen::Matrix4d StdPipeline::get_interpolation_T(const Frame &frame, const Eigen::Matrix4d &i_pose, bool remove_ground)
+{
+    // create temp i
     pcl::transformPointCloud(*frame.cloud_i, *frame.cloud_i, i_pose);
     PointCloudT::Ptr i_temp(new PointCloudT);
     *i_temp = *frame.cloud_i;
 
-    // create temp c   
+    // create temp c
     PointCloudT::Ptr c_temp(new PointCloudT);
     *c_temp = *frame.cloud_c;
 
     // ground removoal for temp i
-    if (remove_ground) {
+    if (remove_ground)
+    {
         i_temp = remove_ground_basic(i_temp);
     }
 
@@ -132,14 +146,14 @@ Eigen::Matrix4d StdPipeline::get_interpolation_T(const Frame &frame, const Eigen
 }
 
 // keeps rotation estiates from ground truth
-std::optional<Eigen::Matrix4d>  SimplePipeline::guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose)
+std::optional<Eigen::Matrix4d> SimplePipeline::guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose)
 {
 
     // fix infrastructure point cloud
     pcl::transformPointCloud(*frame.cloud_i, *frame.cloud_i, i_pose);
     PointCloudT::Ptr i_temp(new PointCloudT);
     *i_temp = *frame.cloud_i;
-    i_temp = remove_ground_basic(i_temp);
+    // i_temp = remove_ground_basic(i_temp);
 
     // add noise
     //  Eigen::Matrix4d pose;
@@ -147,17 +161,17 @@ std::optional<Eigen::Matrix4d>  SimplePipeline::guess_v_pose(const Frame &frame,
     Eigen::Matrix4d pose = get_gps_location(frame.pose_c, 3);
     // std::cout << "Noise Added: \n" << pose << std::endl;
 
-    pose(0, 0) = frame.pose_c(0, 0);
-    pose(0, 1) = frame.pose_c(0, 1);
-    pose(0, 2) = frame.pose_c(0, 2);
+    // pose(0, 0) = frame.pose_c(0, 0);
+    // pose(0, 1) = frame.pose_c(0, 1);
+    // pose(0, 2) = frame.pose_c(0, 2);
 
-    pose(1, 0) = frame.pose_c(1, 0);
-    pose(1, 1) = frame.pose_c(1, 1);
-    pose(1, 2) = frame.pose_c(1, 2);
+    // pose(1, 0) = frame.pose_c(1, 0);
+    // pose(1, 1) = frame.pose_c(1, 1);
+    // pose(1, 2) = frame.pose_c(1, 2);
 
-    pose(2, 0) = frame.pose_c(2, 0);
-    pose(2, 1) = frame.pose_c(2, 1);
-    pose(2, 2) = frame.pose_c(2, 2);
+    // pose(2, 0) = frame.pose_c(2, 0);
+    // pose(2, 1) = frame.pose_c(2, 1);
+    // pose(2, 2) = frame.pose_c(2, 2);
 
     PointCloudT::Ptr c_temp(new PointCloudT);
     pcl::transformPointCloud(*frame.cloud_c, *c_temp, pose);
@@ -165,8 +179,8 @@ std::optional<Eigen::Matrix4d>  SimplePipeline::guess_v_pose(const Frame &frame,
     // ground align
     bool remove_ground = true;
     // gets vectors and removes ground from car point cloud
-    std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(c_temp, remove_ground);
-    c_temp = std::get<2>(vectors);
+    // std::tuple<Eigen::Vector3f, Eigen::Vector3f, pcl::PointCloud<pcl::PointXYZ>::Ptr> vectors = getVectors(c_temp, remove_ground);
+    // c_temp = std::get<2>(vectors);
 
     // icp
     Eigen::Matrix4d icp_pose = align_icp(c_temp, i_temp, 50);
@@ -175,7 +189,7 @@ std::optional<Eigen::Matrix4d>  SimplePipeline::guess_v_pose(const Frame &frame,
     return icp_pose * pose;
 }
 
-std::optional<Eigen::Matrix4d>  InterpolationPipeline::guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose)
+std::optional<Eigen::Matrix4d> InterpolationPipeline::guess_v_pose(const Frame &frame, const Eigen::Matrix4d &i_pose)
 {
     // fix infrastructure point cloud
     pcl::transformPointCloud(*frame.cloud_i, *frame.cloud_i, i_pose);
@@ -299,65 +313,19 @@ Eigen::Matrix3d create_rot_matrix(Eigen::Vector3f z, Eigen::Vector3f y)
     return rot;
 }
 
-
-
-Eigen::Matrix4d get_best_rotation(PointCloudT::Ptr src, PointCloudT::Ptr target, Eigen::Matrix4d translate){
+Eigen::Matrix4d get_best_rotation(PointCloudT::Ptr src, PointCloudT::Ptr target, Eigen::Matrix4d translate, int num_rots)
+{
     std::vector<double> scores;
-    double degree = 0;
 
-    Eigen::Matrix4d pose;
-    PointCloudT::Ptr c_0 (new PointCloudT); 
-    pcl::transformPointCloud(*src, *c_0, translate);
-    scores.push_back(get_icp_score(src, target));
-
-    PointCloudT::Ptr c_45 (new PointCloudT); 
-    degree = 45;
-    pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*src, *c_45, pose);
-    pcl::transformPointCloud(*c_45, *c_45, translate);
-    scores.push_back(get_icp_score(c_45, target));
-
-    PointCloudT::Ptr c_90 (new PointCloudT);
-    degree = 90; 
-    pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*src, *c_90, pose);
-    pcl::transformPointCloud(*c_90, *c_90, translate);
-    scores.push_back(get_icp_score(c_90, target));
-
-    PointCloudT::Ptr c_135 (new PointCloudT); 
-    degree = 135;
-    pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*src, *c_135, pose);
-    pcl::transformPointCloud(*c_135, *c_135, translate);
-    scores.push_back(get_icp_score(c_135, target));
-
-    PointCloudT::Ptr c_180 (new PointCloudT); 
-    degree = 180;
-    pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*src, *c_180, pose);
-    pcl::transformPointCloud(*c_180, *c_180, translate);
-    scores.push_back(get_icp_score(c_180, target));
-
-    PointCloudT::Ptr c_225 (new PointCloudT); 
-    degree = 225;
-    pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*src, *c_225, pose);
-    pcl::transformPointCloud(*c_225, *c_225, translate);
-    scores.push_back(get_icp_score(c_225, target));
-
-    PointCloudT::Ptr c_270 (new PointCloudT); 
-    degree = 270;
-    pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*src, *c_270, pose);
-    pcl::transformPointCloud(*c_270, *c_270, translate);
-    scores.push_back(get_icp_score(c_270, target));
-
-    PointCloudT::Ptr c_315 (new PointCloudT); 
-    degree = 315;
-    pose = make_custom_rot_matrix(degree);
-    pcl::transformPointCloud(*src, *c_315, pose);
-    pcl::transformPointCloud(*c_315, *c_315, translate);
-    scores.push_back(get_icp_score(c_315, target));
+    for (int i = 0; i < num_rots; i++)
+    {
+        double degree = (360.0 / double(num_rots)) * double(i);
+        PointCloudT::Ptr c(new PointCloudT);
+        Eigen::Matrix4d pose = make_custom_rot_matrix(degree);
+        pcl::transformPointCloud(*src, *c, pose);
+        pcl::transformPointCloud(*c, *c, translate);
+        scores.push_back(get_icp_score(c, target));
+    }
 
     // std::cout << "Score 0: \n " << scores[0] << std::endl;
     // std::cout << "Score 45: \n " << scores[1] << std::endl;
@@ -368,12 +336,12 @@ Eigen::Matrix4d get_best_rotation(PointCloudT::Ptr src, PointCloudT::Ptr target,
     // std::cout << "Score 270: \n " << scores[6] << std::endl;
     // std::cout << "Score 315: \n " << scores[7] << std::endl;
 
-    int i = min_element(scores.begin(),scores.end()) - scores.begin();
-    degree = i*45;
-    return make_custom_rot_matrix(degree);
+    int i = min_element(scores.begin(), scores.end()) - scores.begin();
+    return make_custom_rot_matrix(i * (360.0 / double(num_rots)));
 }
 
-double get_icp_score(PointCloudT::Ptr src, PointCloudT::Ptr target){
+double get_icp_score(PointCloudT::Ptr src, PointCloudT::Ptr target)
+{
     pcl::IterativeClosestPoint<PointT, PointT> icp;
     icp.setMaximumIterations(1);
     icp.setInputTarget(target);
@@ -385,14 +353,15 @@ double get_icp_score(PointCloudT::Ptr src, PointCloudT::Ptr target){
     return icp.getFitnessScore();
 }
 
-Eigen::Matrix4d make_custom_rot_matrix(double degrees){
-    double theta = degrees * (M_PI / 180.0); 
+Eigen::Matrix4d make_custom_rot_matrix(double degrees)
+{
+    double theta = degrees * (M_PI / 180.0);
 
     // Create a rotation matrix around the x-axis
     Eigen::Matrix4d rotation_matrix;
     rotation_matrix << cos(theta), -sin(theta), 0, 1,
-                       sin(theta), cos(theta), 0, 1,
-                       0, 0, 1, 1,
-                       0, 0, 0, 1;
-    return rotation_matrix;    
+        sin(theta), cos(theta), 0, 1,
+        0, 0, 1, 1,
+        0, 0, 0, 1;
+    return rotation_matrix;
 }

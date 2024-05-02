@@ -141,7 +141,7 @@ void print_metrics_all(Pipeline &pipeline)
     for (int d_idx = 1; d_idx < 3; d_idx++)
     {
         std::string ds_path = path + "Dataset_" + std::to_string(d_idx) + "/";
-        for (int sd_idx = 1; sd_idx < 5; sd_idx++)
+        for (int sd_idx = 1; sd_idx < 6; sd_idx++)
         {
             std::string sub_ds_path = ds_path + "D" + std::to_string(sd_idx) + "/";
             std::cout << "Loading dataset from " << sub_ds_path << std::endl;
